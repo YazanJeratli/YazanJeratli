@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connect Four</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="back-link" href="index.html">&larr; All games</a>
+  <h1>🔴 Connect Four</h1>
+
+  <div class="scoreboard">
+    <div>🔴 Player 1<span class="score-value" id="score1">0</span></div>
+    <div>Ties<span class="score-value" id="scoreT">0</span></div>
+    <div>🟡 Player 2<span class="score-value" id="score2">0</span></div>
+  </div>
+
+  <div class="card">
+    <div class="status" id="status">Player 1's turn (🔴)</div>
+    <div class="c4-board" id="board"></div>
+    <div class="controls">
+      <button id="newRound">New Round</button>
+      <button class="secondary" id="resetScores">Reset Scores</button>
+    </div>
+  </div>
+
+  <script>
+    const COLS = 7;
+    const ROWS = 6;
+
+    // grid[col] is an array of pieces from bottom to top, values 1 or 2
+    let grid = Array.from({ length: COLS }, () => []);
+    let current = 1;
+    let gameOver = false;
+    const scores = { 1: 0, 2: 0, T: 0 };
+
+    const boardEl = document.getElementById("board");
+    const statusEl = document.getElementById("status");
+    const score1El = document.getElementById("score1");
+    const score2El = document.getElementById("score2");
+    const scoreTEl = document.getElementById("scoreT");
+
+    function label(p) {
+      return p === 1 ? "Player 1 (🔴)" : "Player 2 (🟡)";
+    }
+
+    function renderBoard(winCells = []) {
+      boardEl.innerHTML = "";
+      boardEl.style.gridTemplateColumns = `repeat(${COLS}, 52px)`;
+      for (let c = 0; c < COLS; c++) {
+        const colEl = document.createElement("div");
+        colEl.className = "c4-col";
+        colEl.addEventListener("click", () => handleMove(c));
+        for (let r = 0; r < ROWS; r++) {
+          const cellEl = document.createElement("div");
+          const piece = grid[c][r];
+          cellEl.className = "c4-cell " + (piece ? `p${piece}` : "empty");
+          if (winCells.some(([wc, wr]) => wc === c && wr === r)) {
+            cellEl.classList.add("win");
+          }
+          colEl.appendChild(cellEl);
+        }
+        boardEl.appendChild(colEl);
+      }
+    }
+
+    function handleMove(c) {
+      if (gameOver || grid[c].length >= ROWS) return;
+      const r = grid[c].length;
+      grid[c].push(current);
+      const winCells = checkWin(c, r);
+      if (winCells) {
+        gameOver = true;
+        scores[current]++;
+        updateScores();
+        statusEl.textContent = `${label(current)} wins! 🎉`;
+        renderBoard(winCells);
+        return;
+      }
+      if (grid.every((col) => col.length === ROWS)) {
+        gameOver = true;
+        scores.T++;
+        updateScores();
+        statusEl.textContent = "It's a tie! 🤝";
+        renderBoard();
+        return;
+      }
+      current = current === 1 ? 2 : 1;
+      statusEl.textContent = `${label(current)}'s turn`;
+      renderBoard();
+    }
+
+    function pieceAt(c, r) {
+      if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return null;
+      return grid[c][r] || null;
+    }
+
+    function checkWin(col, row) {
+      const player = grid[col][row];
+      const directions = [
+        [1, 0],
+        [0, 1],
+        [1, 1],
+        [1, -1],
+      ];
+      for (const [dc, dr] of directions) {
+        const line = [[col, row]];
+        for (const sign of [1, -1]) {
+          let c = col + dc * sign;
+          let r = row + dr * sign;
+          while (pieceAt(c, r) === player) {
+            line.push([c, r]);
+            c += dc * sign;
+            r += dr * sign;
+          }
+        }
+        if (line.length >= 4) return line;
+      }
+      return null;
+    }
+
+    function updateScores() {
+      score1El.textContent = scores[1];
+      score2El.textContent = scores[2];
+      scoreTEl.textContent = scores.T;
+    }
+
+    function newRound() {
+      grid = Array.from({ length: COLS }, () => []);
+      current = 1;
+      gameOver = false;
+      statusEl.textContent = `${label(current)}'s turn`;
+      renderBoard();
+    }
+
+    document.getElementById("newRound").addEventListener("click", newRound);
+    document.getElementById("resetScores").addEventListener("click", () => {
+      scores[1] = 0;
+      scores[2] = 0;
+      scores.T = 0;
+      updateScores();
+      newRound();
+    });
+
+    renderBoard();
+  </script>
+</body>
+</html>
