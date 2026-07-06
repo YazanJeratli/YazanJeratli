@@ -1,0 +1,247 @@
+:root {
+  --pink: #ff5f8f;
+  --pink-dark: #d94373;
+  --purple: #7b5cff;
+  --bg-top: #2b1055;
+  --bg-bottom: #7597de;
+  --card-bg: rgba(255, 255, 255, 0.08);
+  --text: #fff6fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem 1.25rem;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: 2.1rem;
+  text-align: center;
+}
+
+.subtitle {
+  margin: 0 0 2rem;
+  opacity: 0.85;
+  text-align: center;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 1.75rem;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+a {
+  color: var(--text);
+}
+
+.back-link {
+  align-self: flex-start;
+  margin-bottom: 1.5rem;
+  text-decoration: none;
+  opacity: 0.8;
+  font-size: 0.95rem;
+}
+
+.back-link:hover {
+  opacity: 1;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 700px;
+}
+
+.game-tile {
+  text-decoration: none;
+  color: var(--text);
+  text-align: center;
+  padding: 2rem 1.25rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-tile:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.game-tile .emoji {
+  font-size: 2.75rem;
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.game-tile h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+}
+
+.game-tile p {
+  margin: 0;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.status {
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 600;
+  min-height: 1.6em;
+  margin-bottom: 1rem;
+}
+
+.scoreboard {
+  display: flex;
+  justify-content: center;
+  gap: 2.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.scoreboard .score-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  display: block;
+  text-align: center;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+button {
+  font: inherit;
+  border: none;
+  border-radius: 12px;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  background: var(--pink);
+  color: #2b1055;
+  font-weight: 700;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+button:hover {
+  background: var(--pink-dark);
+  color: white;
+  transform: translateY(-1px);
+}
+
+button.secondary {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text);
+}
+
+button.secondary:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* Tic-tac-toe */
+.ttt-board {
+  display: grid;
+  grid-template-columns: repeat(3, 90px);
+  grid-template-rows: repeat(3, 90px);
+  gap: 8px;
+  margin: 0 auto;
+}
+
+.ttt-cell {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  border-radius: 14px;
+  font-size: 2.6rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s ease;
+}
+
+.ttt-cell:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.ttt-cell:disabled {
+  cursor: default;
+}
+
+.ttt-cell.win {
+  background: var(--pink);
+  color: #2b1055;
+}
+
+/* Connect four */
+.c4-board {
+  background: #1c2b6b;
+  padding: 10px;
+  border-radius: 16px;
+  display: inline-grid;
+  gap: 8px;
+  margin: 0 auto;
+}
+
+.c4-col {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.c4-cell {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.c4-cell.p1 {
+  background: var(--pink);
+}
+
+.c4-cell.p2 {
+  background: #ffd45f;
+}
+
+.c4-cell.win {
+  box-shadow: 0 0 0 4px white inset;
+}
+
+.c4-col:hover .c4-cell.empty {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 480px) {
+  .ttt-board {
+    grid-template-columns: repeat(3, 74px);
+    grid-template-rows: repeat(3, 74px);
+  }
+  .c4-cell {
+    width: 38px;
+    height: 38px;
+  }
+}
