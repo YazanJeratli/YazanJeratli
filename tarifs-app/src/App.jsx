@@ -176,7 +176,6 @@ function Hero() {
           accentColor={OR.o500}
           hoverEffect="lift"
         />
-        <p className="body-lg muted">Coaching en salle à Lyon ou à distance. Ce que tu économises se calcule tout seul.</p>
       </div>
     </header>
   );
@@ -242,7 +241,7 @@ function Phare({ tarifs }) {
   if (c.ecoAn > 0.5) inclus.push(`${euros(c.ecoAn)} économisés sur 12 mois par rapport à la carte`);
 
   return (
-    <section className="section" aria-labelledby="t-phare">
+    <section className="section" id="phare" aria-labelledby="t-phare">
       <div className="phare">
         <svg className="phare-motif" viewBox="0 0 120 150" aria-hidden="true" focusable="false">
           {[0, 1, 2].map(i => (
@@ -303,6 +302,7 @@ function Essai({ tarifs }) {
       clickPulse={false}
       backgroundColor="#13110e"
       borderColor="rgba(233, 180, 58, 0.4)"
+      id="essai"
       aria-labelledby="t-essai"
     >
       <div className="essai">
@@ -424,7 +424,7 @@ function Formules({ tarifs, onCompare }) {
   const liste = tarifs.formules.filter(f => f.type === groupe);
 
   return (
-    <section className="section" aria-labelledby="t-formules">
+    <section className="section" id="formules" aria-labelledby="t-formules">
       <div className="section-head">
         <h2 className="title" id="t-formules">
           Toutes les formules
@@ -784,7 +784,7 @@ function Reglages({ tarifs, version, modifie, reinitialise, status }) {
       </summary>
       <div className="settings-body" key={version}>
         <p className="small muted">
-          Pour toi, coach. Change un prix ici : tout le reste se recalcule. Les changements restent sur ce téléphone.
+          Change un prix : tout le reste se recalcule. Les changements restent sur ce téléphone.
         </p>
 
         <fieldset>
@@ -868,6 +868,81 @@ function Reglages({ tarifs, version, modifie, reinitialise, status }) {
   );
 }
 
+const SECTIONS = [
+  { id: 'phare', nom: 'Phare' },
+  { id: 'essai', nom: 'Essai' },
+  { id: 'formules', nom: 'Formules' },
+  { id: 'compare', nom: 'Compare' }
+];
+
+// Barre du bas : un appui pour sauter à la partie que tu expliques
+function Nav() {
+  const [actif, setActif] = useState('phare');
+  useEffect(() => {
+    const els = SECTIONS.map(x => document.getElementById(x.id)).filter(Boolean);
+    const obs = new IntersectionObserver(
+      entries => entries.forEach(e => e.isIntersecting && setActif(e.target.id)),
+      { rootMargin: '-35% 0px -60% 0px' }
+    );
+    els.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+  const va = id => {
+    setActif(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  return (
+    <nav className="nav" aria-label="Parties de la page">
+      {SECTIONS.map(x => {
+        const on = actif === x.id;
+        return (
+          <button
+            key={x.id}
+            type="button"
+            className={on ? 'is-on' : ''}
+            aria-current={on ? 'true' : undefined}
+            onClick={() => va(x.id)}
+          >
+            {on && (
+              <motion.span
+                layoutId="nav-barre"
+                className="nav-barre"
+                transition={{ type: 'spring', stiffness: 520, damping: 40 }}
+              />
+            )}
+            <span className="label">{x.nom}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+// Garde l’écran allumé tant que l’appli est ouverte (si le téléphone l’accepte)
+function useEcranAllume() {
+  useEffect(() => {
+    let verrou = null;
+    let actif = true;
+    const demande = async () => {
+      try {
+        if (actif && document.visibilityState === 'visible' && navigator.wakeLock) {
+          verrou = await navigator.wakeLock.request('screen');
+        }
+      } catch (e) {
+        /* refusé : l’écran se mettra en veille normalement */
+      }
+    };
+    const onVisible = () => document.visibilityState === 'visible' && demande();
+    demande();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      actif = false;
+      document.removeEventListener('visibilitychange', onVisible);
+      verrou?.release?.().catch(() => {});
+    };
+  }, []);
+}
+
 const premierComparable = t => {
   const p = formule(t, t.phare);
   return p && p.type !== 'distanciel' ? p.id : 'hybride-1';
@@ -883,6 +958,7 @@ export default function App() {
   const minuteur = useRef(0);
   const tarifsRef = useRef(tarifs);
   tarifsRef.current = tarifs;
+  useEcranAllume();
 
   const annonce = texte => {
     setStatus(texte);
@@ -949,6 +1025,7 @@ export default function App() {
           <span>Tarifs en euros TTC</span>
         </footer>
       </main>
+      <Nav />
     </ClickSpark>
   );
 }
