@@ -418,7 +418,7 @@ function CarteFormule({ tarifs, f, phare, onCompare }) {
   else
     detail = (
       <>
-        Suivi <strong>100 % à distance</strong>, sans séance en salle
+        Musculation ou force athlétique, suivi <strong>100 % à distance</strong>
       </>
     );
 

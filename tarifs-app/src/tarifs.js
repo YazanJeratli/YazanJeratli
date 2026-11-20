@@ -19,17 +19,15 @@ export const DEFAUTS = {
     { id: 'presentiel-3', type: 'presentiel', nom: 'Présentiel 3 fois par semaine', court: '3×', seances: 12, prix: 520 },
     { id: 'presentiel-4', type: 'presentiel', nom: 'Présentiel 4 fois par semaine', court: '4×', seances: 16, prix: 660 },
     { id: 'presentiel-5', type: 'presentiel', nom: 'Présentiel 5 fois par semaine', court: '5×', seances: 20, prix: 780 },
-    { id: 'distanciel-muscu', type: 'distanciel', nom: 'Distanciel musculation', court: 'Musculation', seances: 0, prix: 110 },
-    { id: 'distanciel-fa', type: 'distanciel', nom: 'Distanciel force athlétique', court: 'Force athlétique', seances: 0, prix: 100 }
+    { id: 'distanciel', type: 'distanciel', nom: 'Distanciel', court: 'Distanciel', seances: 0, prix: 100 }
   ]
 };
 
 // Parrainage : −10 % sur l’abonnement du parrain par filleul abonné, 2 filleuls au plus (−20 %).
 export const PARRAINAGE = { remiseParFilleul: 0.1, maxFilleuls: 2 };
 
-// Le suivi à distance « à la carte » est compté au prix du distanciel musculation,
-// comme dans ta grille (Hybride = Présentiel + 110 €).
-export const ID_DISTANCIEL_REF = 'distanciel-muscu';
+// Le suivi à distance « à la carte » est compté au prix du distanciel (100 €, musculation ou force athlétique).
+export const ID_DISTANCIEL_REF = 'distanciel';
 
 const CLE = 'yaz-tarifs-v2';
 
@@ -99,7 +97,7 @@ export const pluriel = (n, mot) => (n >= 2 ? `${mot}s` : mot);
 export const seances = n => `${nombre(n)}${NBSP}${pluriel(n, 'séance')}`;
 
 export const formule = (t, id) => t.formules.find(f => f.id === id);
-export const prixDistanciel = t => formule(t, ID_DISTANCIEL_REF)?.prix ?? 110;
+export const prixDistanciel = t => formule(t, ID_DISTANCIEL_REF)?.prix ?? 100;
 
 // Ce que coûteraient les mêmes services sans formule
 export function calc(t, f) {
