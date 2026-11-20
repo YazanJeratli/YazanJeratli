@@ -16,7 +16,7 @@ const res = await build({
   format: 'iife',
   target: ['es2020', 'safari15'],
   jsx: 'automatic',
-  loader: { '.jpg': 'dataurl', '.js': 'jsx' },
+  loader: { '.png': 'dataurl', '.js': 'jsx' },
   define: { 'process.env.NODE_ENV': '"production"' },
   legalComments: 'none',
   outdir: resolve(racine, 'dist'),
@@ -30,7 +30,7 @@ const css = sortie('.css').replace(/<\/style/gi, '<\\/style');
 const tete = `<title>Tarifs YAZ Coaching</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap">
 <style>${css}</style>`;
 
 const corps = `<div id="root"></div>

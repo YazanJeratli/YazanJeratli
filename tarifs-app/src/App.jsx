@@ -8,7 +8,7 @@ import ShinyText from './reactbits/ShinyText.jsx';
 import SplitText from './reactbits/SplitText.jsx';
 import SpotlightCard from './reactbits/SpotlightCard.jsx';
 import StarBorder from './reactbits/StarBorder.jsx';
-import logo from '../assets/logo.jpg';
+import logo from '../assets/logo.png';
 import {
   DEFAUTS,
   NBSP,
@@ -38,8 +38,53 @@ const ICONES = {
   check: <path d="M4 12L9.5 17.5L20 7" fill="none" stroke="currentColor" strokeWidth="2" />,
   arrow: <path d="M3 12H19.5M13 5.5L19.5 12L13 18.5" fill="none" stroke="currentColor" strokeWidth="2" />,
   plus: <path d="M12 4V20M4 12H20" fill="none" stroke="currentColor" strokeWidth="2" />,
-  close: <path d="M5 5L19 19M19 5L5 19" fill="none" stroke="currentColor" strokeWidth="2" />
+  close: <path d="M5 5L19 19M19 5L5 19" fill="none" stroke="currentColor" strokeWidth="2" />,
+  trophy: (
+    <path
+      d="M7 3H17V9.5L14.5 13H9.5L7 9.5Z M7 5H3.5V7.5L7 9.5 M17 5H20.5V7.5L17 9.5 M12 13V20 M7 20H17"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
+  ),
+  list: (
+    <>
+      <path d="M3 4.5L6 4.5L6 7.5L3 7.5Z M3 10.5L6 10.5L6 13.5L3 13.5Z M3 16.5L6 16.5L6 19.5L3 19.5Z" fill="currentColor" />
+      <path d="M9 6H21M9 12H21M9 18H21" fill="none" stroke="currentColor" strokeWidth="2" />
+    </>
+  ),
+  trending: (
+    <path d="M2.5 17.5L9 11L13 15L21.5 6.5 M14.5 6.5H21.5V13.5" fill="none" stroke="currentColor" strokeWidth="2" />
+  ),
+  user: (
+    <path d="M8 7A4 4 0 1 0 16 7A4 4 0 1 0 8 7Z M4 21V17.5L7.5 14H16.5L20 17.5V21" fill="none" stroke="currentColor" strokeWidth="2" />
+  ),
+  back: <path d="M7.38 12L16.62 6L16.62 8.38L11.05 12L16.62 15.62L16.62 18Z" fill="currentColor" />,
+  dumbbell: (
+    <>
+      <path d="M9.17 14.83L14.83 9.17" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M2.81 13.41L5.28 10.94L13.06 18.72L10.59 21.19Z M10.94 5.28L13.41 2.81L21.19 10.59L18.72 13.06Z" fill="currentColor" />
+    </>
+  ),
+  calendar: <path d="M3 5H21V21H3Z M3 10H21 M8 2V7 M16 2V7" fill="none" stroke="currentColor" strokeWidth="2" />,
+  chevrons: (
+    <path
+      d="M12 3.38L18 12.62L15.62 12.62L12 7.05L8.38 12.62L6 12.62Z M12 11.38L18 20.62L15.62 20.62L12 15.05L8.38 20.62L6 20.62Z"
+      fill="currentColor"
+    />
+  )
 };
+
+// Une icône dans sa petite case arrondie, comme dans YAZ Force
+function Case({ nom, className = '' }) {
+  return (
+    <span className={`ico ${className}`}>
+      <Icone nom={nom} />
+    </span>
+  );
+}
+
+const ICONE_TYPE = { hybride: 'chevrons', presentiel: 'dumbbell', distanciel: 'list' };
 
 function Icone({ nom, className = '' }) {
   return (
@@ -199,7 +244,9 @@ function Mois({ f }) {
               initial={reduit ? false : { scale: 0.4, opacity: 0.2 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.55 + i * 0.09, type: 'spring', stiffness: 420, damping: 16 }}
-            />
+            >
+              {n <= 8 ? i + 1 : ''}
+            </motion.li>
           ))}
         </ol>
       )}
@@ -230,8 +277,7 @@ function Mois({ f }) {
   );
 }
 
-function Phare({ tarifs }) {
-  const reduit = useReducedMotion();
+function Phare({ tarifs, onParrainage }) {
   const f = formule(tarifs, tarifs.phare) || tarifs.formules[1];
   const c = calc(tarifs, f);
   const inclus = [];
@@ -244,19 +290,11 @@ function Phare({ tarifs }) {
   return (
     <section className="section" id="phare" aria-labelledby="t-phare">
       <div className="phare">
-        <svg className="phare-motif" viewBox="0 0 120 150" aria-hidden="true" focusable="false">
-          {[0, 1, 2].map(i => (
-            <motion.path
-              key={i}
-              d={`M60 ${10 + i * 44}L96 ${65 + i * 44}L82 ${65 + i * 44}L60 ${31 + i * 44}L38 ${65 + i * 44}L24 ${65 + i * 44}Z`}
-              initial={{ opacity: 0.35 }}
-              animate={reduit ? undefined : { opacity: [0.35, 1, 0.35] }}
-              transition={{ duration: 2.4, delay: (2 - i) * 0.35, repeat: Infinity, repeatDelay: 1.2 }}
-            />
-          ))}
-        </svg>
         <div className="phare-top">
-          <p className="label">La formule phare</p>
+          <span className="pill-or label">
+            <Icone nom="trophy" />
+            Formule phare
+          </span>
           <h2 className="phare-nom" id="t-phare">
             {f.nom}
           </h2>
@@ -276,13 +314,32 @@ function Phare({ tarifs }) {
         <ul className="inclus">
           {inclus.map(t => (
             <li key={t}>
-              <Icone nom="check" />
+              <Case nom="check" />
               <span>{t}</span>
             </li>
           ))}
         </ul>
       </div>
+      <BoutonParrainage onOuvre={onParrainage} />
     </section>
+  );
+}
+
+function BoutonParrainage({ onOuvre }) {
+  const pct = Math.round(PARRAINAGE.remiseParFilleul * 100);
+  return (
+    <button type="button" className="bouton-parrain" onClick={onOuvre}>
+      <Case nom="user" className="ico-or" />
+      <span className="bp-texte">
+        <span className="bp-titre">Parrainage</span>
+        <span className="small muted">
+          −{pct}{NBSP}% par ami abonné, jusqu’à −{pct * PARRAINAGE.maxFilleuls}{NBSP}%
+        </span>
+      </span>
+      <span className="bp-fleche">
+        <Icone nom="arrow" />
+      </span>
+    </button>
   );
 }
 
@@ -293,7 +350,7 @@ function Essai({ tarifs }) {
       className="star-wrap"
       color={OR.o100}
       trailColor={OR.o500}
-      radius={0}
+      radius={18}
       thickness={1.5}
       duration={6}
       trailLength={0.35}
@@ -301,23 +358,21 @@ function Essai({ tarifs }) {
       glow={0.9}
       hover="none"
       clickPulse={false}
-      backgroundColor="#13110e"
-      borderColor="rgba(233, 180, 58, 0.4)"
+      backgroundColor="#151518"
+      borderColor="rgba(233, 180, 58, 0.3)"
       id="essai"
       aria-labelledby="t-essai"
     >
       <div className="essai">
+        <Case nom="calendar" className="ico-or" />
         <div className="essai-text">
-          <p className="label eyebrow">
-            <Icone nom="triangle" />
-            Pour commencer
-          </p>
+          <p className="label accent">Pour commencer</p>
           <h2 className="heading" id="t-essai">
             Séance d’essai + bilan
           </h2>
           <p className="small muted">Une première séance en salle et un bilan, avant de choisir ta formule.</p>
         </div>
-        <p className="figure">
+        <p className="essai-prix">
           <Prix value={tarifs.essai} />
         </p>
       </div>
@@ -378,13 +433,14 @@ function CarteFormule({ tarifs, f, phare, onCompare }) {
       borderGlow={0.8}
       proximity={60}
       style={{
-        '--spotlight-card-surface': '#13110e',
-        '--spotlight-card-border': phare ? 'rgba(233, 180, 58, 0.6)' : 'rgba(233, 180, 58, 0.14)',
+        '--spotlight-card-surface': '#151518',
+        '--spotlight-card-border': phare ? 'rgba(233, 180, 58, 0.55)' : 'rgba(255, 255, 255, 0.08)',
         '--spotlight-card-shadow': 'none'
       }}
     >
       <div className="card-head">
-        <h3 className="heading">{f.nom}</h3>
+        <Case nom={ICONE_TYPE[f.type]} className={phare ? 'ico-or' : ''} />
+        <h3 className="card-nom">{f.nom}</h3>
         {phare && (
           <span className="tag label is-best">
             <ShinyText text="Formule phare" color={OR.o500} shineColor={OR.o100} speed={2} delay={1.2} />
@@ -401,7 +457,7 @@ function CarteFormule({ tarifs, f, phare, onCompare }) {
         <ul className="gains">
           {lignes.map((l, k) => (
             <li key={k}>
-              <Icone nom="check" />
+              <Case nom="check" />
               <span>{l}</span>
             </li>
           ))}
@@ -686,25 +742,31 @@ function Comparateur({ tarifs, choix, setChoix, mois, setMois, sectionRef }) {
         .
       </p>
 
-      <Duel c={c} tarifs={tarifs} />
+      <div className="panel">
+        <Duel c={c} tarifs={tarifs} />
+      </div>
 
       <div className="result" aria-live="polite">
         {c.eco > 0.5 ? (
           <>
-            <p className="label muted">Tu économises {periode}</p>
-            <p className="figure-xl accent">
-              <Prix value={c.eco} duree={1.1} />
-            </p>
-            {offertes >= 1 ? (
-              <>
-                <p>
-                  soit l’équivalent de <strong>{seances(offertes)} {pluriel(offertes, 'offerte')}</strong>
-                </p>
-                <Jetons n={offertes} />
-              </>
-            ) : (
-              <p>par rapport à la carte.</p>
-            )}
+            <div className="tuile tuile-or">
+              <p className="small">Tu économises {periode}</p>
+              <p className="figure-xl">
+                <Prix value={c.eco} duree={1.1} />
+              </p>
+              <p className="small">par rapport à la carte</p>
+            </div>
+            <div className="tuiles">
+              <div className="tuile">
+                <p className="small muted">Séances offertes</p>
+                <p className="tuile-val">{offertes}</p>
+              </div>
+              <div className="tuile">
+                <p className="small muted">{c.parSeance != null ? 'Prix par séance' : 'Économie par mois'}</p>
+                <p className="tuile-val">{euros(c.parSeance != null ? c.parSeance : c.eco / c.mois)}</p>
+              </div>
+            </div>
+            {offertes >= 1 && <Jetons n={offertes} />}
           </>
         ) : (
           <>
@@ -754,11 +816,11 @@ function Parrainage({ tarifs }) {
   };
 
   return (
-    <section className="section" id="parrainage" aria-labelledby="t-parrainage">
+    <section className="section" aria-labelledby="t-parrainage">
       <div className="section-head">
-        <h2 className="title" id="t-parrainage">
+        <h1 className="title" id="t-parrainage">
           Parrainage
-        </h2>
+        </h1>
         <p className="muted">Ton ami s’abonne, ton abonnement baisse. Chaque mois, tant qu’il reste.</p>
       </div>
 
@@ -899,10 +961,9 @@ function SansFormule({ tarifs }) {
         Sans formule
       </h2>
       <div className="unit">
+        <Case nom="dumbbell" />
         <div className="unit-text">
-          <p className="label eyebrow">
-            <Icone nom="triangle" />À l’unité
-          </p>
+          <p className="unit-titre">À l’unité</p>
           <p className="small muted">Une séance en salle, quand tu veux</p>
         </div>
         <p className="price-line">
@@ -1041,10 +1102,10 @@ function Reglages({ tarifs, version, modifie, reinitialise, status }) {
 }
 
 const SECTIONS = [
-  { id: 'phare', nom: 'Phare' },
-  { id: 'formules', nom: 'Formules' },
-  { id: 'compare', nom: 'Compare' },
-  { id: 'parrainage', nom: 'Parrainage' }
+  { id: 'phare', nom: 'Phare', icone: 'trophy' },
+  { id: 'essai', nom: 'Essai', icone: 'calendar' },
+  { id: 'formules', nom: 'Formules', icone: 'list' },
+  { id: 'compare', nom: 'Compare', icone: 'trending' }
 ];
 
 // Barre du bas : un appui pour sauter à la partie que tu expliques
@@ -1082,7 +1143,8 @@ function Nav() {
                 transition={{ type: 'spring', stiffness: 520, damping: 40 }}
               />
             )}
-            <span className="label">{x.nom}</span>
+            <Icone nom={x.icone} />
+            <span className="nav-nom">{x.nom}</span>
           </button>
         );
       })}
@@ -1132,6 +1194,37 @@ export default function App() {
   tarifsRef.current = tarifs;
   useEcranAllume();
 
+  // Deux vues : l’accueil et la page Parrainage (#parrainage)
+  const lireVue = () => (window.location.hash === '#parrainage' ? 'parrainage' : 'accueil');
+  const [vue, setVue] = useState(lireVue);
+  const scrollAccueil = useRef(0);
+  useEffect(() => {
+    const onHash = () => setVue(lireVue());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  useEffect(() => {
+    const y = vue === 'parrainage' ? 0 : scrollAccueil.current;
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }, [vue]);
+  const ouvreParrainage = () => {
+    scrollAccueil.current = window.scrollY;
+    setVue('parrainage');
+    try {
+      window.location.hash = 'parrainage';
+    } catch (e) {
+      /* la vue change quand même */
+    }
+  };
+  const retourAccueil = () => {
+    setVue('accueil');
+    try {
+      if (window.location.hash) window.location.hash = '';
+    } catch (e) {
+      /* la vue change quand même */
+    }
+  };
+
   const annonce = texte => {
     setStatus(texte);
     clearTimeout(minuteur.current);
@@ -1177,28 +1270,45 @@ export default function App() {
       shape="line"
       className="spark-root"
     >
-      <Hero />
-      <main className="app">
-        <Phare tarifs={tarifs} />
-        <Essai tarifs={tarifs} />
-        <Formules tarifs={tarifs} onCompare={versComparateur} />
-        <Comparateur
-          tarifs={tarifs}
-          choix={choix}
-          setChoix={setChoix}
-          mois={mois}
-          setMois={setMois}
-          sectionRef={compareRef}
-        />
-        <Parrainage tarifs={tarifs} />
-        <SansFormule tarifs={tarifs} />
-        <Reglages tarifs={tarifs} version={version} modifie={modifie} reinitialise={reinitialise} status={status} />
-        <footer className="foot small">
-          <span>YAZ Coaching · Lyon</span>
-          <span>Tarifs en euros TTC</span>
-        </footer>
-      </main>
-      <Nav />
+      <div className="vue" hidden={vue !== 'accueil'}>
+        <Hero />
+        <main className="app">
+          <Phare tarifs={tarifs} onParrainage={ouvreParrainage} />
+          <Essai tarifs={tarifs} />
+          <Formules tarifs={tarifs} onCompare={versComparateur} />
+          <Comparateur
+            tarifs={tarifs}
+            choix={choix}
+            setChoix={setChoix}
+            mois={mois}
+            setMois={setMois}
+            sectionRef={compareRef}
+          />
+          <SansFormule tarifs={tarifs} />
+          <Reglages tarifs={tarifs} version={version} modifie={modifie} reinitialise={reinitialise} status={status} />
+          <footer className="foot small">
+            <span>YAZ Coaching · Lyon</span>
+            <span>Tarifs en euros TTC</span>
+          </footer>
+        </main>
+        <Nav />
+      </div>
+      <div className="vue" hidden={vue !== 'parrainage'}>
+        <header className="page-top">
+          <button type="button" className="retour" onClick={retourAccueil}>
+            <Icone nom="back" />
+            Retour
+          </button>
+          <img className="page-logo" src={logo} alt="YAZ" width="84" height="32" />
+        </header>
+        <main className="app app-page">
+          <Parrainage tarifs={tarifs} />
+          <button type="button" className="btn btn-plein" onClick={retourAccueil}>
+            <Icone nom="back" />
+            <span>Retour aux formules</span>
+          </button>
+        </main>
+      </div>
     </ClickSpark>
   );
 }
