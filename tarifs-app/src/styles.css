@@ -264,9 +264,13 @@ button {
 .price-line .label-lg {
   color: var(--ink-muted);
 }
+.unit .price-line {
+  flex: none;
+  flex-wrap: nowrap;
+}
 
-/* Pack : la carte or, bord coupé à 49° */
-.pack {
+/* Formule phare : la carte or, bord coupé à 49° */
+.phare {
   background: var(--gold-500);
   color: var(--on-gold);
   padding: var(--space-4);
@@ -275,62 +279,106 @@ button {
   gap: var(--space-3);
   clip-path: polygon(0 0, calc(100% - 40px) 0, 100% 46px, 100% 100%, 0 100%);
 }
-.pack-top {
+.phare-top {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
+  padding-right: var(--space-5);
+}
+.phare-nom {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(24px, 7vw, 30px);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.phare .price-line .label-lg {
+  color: var(--on-gold);
+}
+.phare-sub {
+  margin-top: calc(-1 * var(--space-2));
+}
+
+/* Le mois : une case par séance en salle, une ligne pour le suivi à distance */
+.mois {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
 .pips {
   display: grid;
-  grid-template-columns: repeat(var(--n, 10), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr));
   gap: 6px;
-  margin-top: var(--space-1);
 }
 .pip {
-  aspect-ratio: 1;
-  max-width: 100%;
+  height: 28px;
   background: var(--on-gold);
-  display: grid;
-  place-items: center;
 }
-.pip.free {
-  background: transparent;
-  border: 2px solid var(--on-gold);
+.ligne {
+  height: 4px;
+  background: var(--on-gold);
+  transform-origin: left center;
 }
-.pip.free .icon {
-  width: 70%;
-  height: 70%;
-  color: var(--on-gold);
-}
-.pips-legend {
+.mois-legende {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+.mois-legende span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.leg-pip {
+  width: 10px;
+  height: 10px;
+  background: var(--on-gold);
+}
+.leg-ligne {
+  width: 16px;
+  height: 4px;
+  background: var(--on-gold);
+}
+.inclus {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
+  border-top: 1px solid rgba(0, 0, 0, 0.25);
+  padding-top: var(--space-3);
 }
-.pack-free {
-  font-weight: 800;
-  font-size: 22px;
-  line-height: 28px;
-}
-.pack-free sup {
-  font-size: 0.6em;
-  line-height: 0;
-}
-
-/* Formules au mois */
-.note {
+.inclus li {
   display: flex;
   gap: var(--space-2);
   align-items: flex-start;
-  padding: var(--space-3);
-  border: 1px solid var(--line-strong);
-  color: var(--ink-muted);
-  font-size: 14px;
-  line-height: 20px;
+  font-weight: 600;
 }
-.note .icon {
-  color: var(--accent);
+.inclus .icon {
+  margin-top: 2px;
 }
+
+/* Séance d’essai, entourée par StarBorder */
+.essai {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  text-align: left;
+}
+.essai-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.essai .figure {
+  white-space: nowrap;
+}
+
+/* Formules au mois */
 .formules {
   display: flex;
   flex-direction: column;
@@ -425,8 +473,9 @@ button {
 .link-btn:hover .icon {
   transform: translateX(3px);
 }
-.empty {
+.type-desc {
   color: var(--ink-muted);
+  margin-top: calc(-1 * var(--space-2));
 }
 
 /* Comparateur */
@@ -520,12 +569,14 @@ button {
   height: 16px;
   background: var(--surface);
   overflow: hidden;
+  display: flex;
 }
 .fill {
   height: 100%;
+  flex: none;
   background: var(--line-strong);
 }
-.bar.is-pack .fill {
+.fill-distance {
   background: var(--ink-muted);
 }
 .bar.is-formule .fill {
@@ -596,7 +647,8 @@ legend {
   font-size: 13px;
   line-height: 18px;
 }
-.field input {
+.field input,
+.field select {
   width: 100%;
   min-height: 44px;
   padding: var(--space-2) 12px;
@@ -609,34 +661,21 @@ legend {
   border-color: var(--ink);
   border-style: dashed;
 }
-.grid-3 {
+.grid-2 {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-2);
-}
-.frow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: var(--space-2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-2);
   align-items: end;
-  padding: var(--space-3);
-  background: var(--surface);
 }
-.frow .field-name {
-  grid-column: 1 / -1;
-}
-.icon-btn {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  background: transparent;
-  border: 1px solid var(--line-strong);
-  color: var(--ink-muted);
-}
-.icon-btn:hover {
-  color: var(--ink);
-  border-color: var(--ink);
+.field select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%),
+    linear-gradient(135deg, var(--accent) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
 }
 .btn {
   min-height: 48px;
@@ -690,7 +729,7 @@ legend {
     font-size: 40px;
     line-height: 48px;
   }
-  .pack {
+  .phare {
     padding: var(--space-3);
   }
 }

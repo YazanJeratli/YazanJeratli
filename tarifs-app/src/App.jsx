@@ -11,11 +11,10 @@ import StarBorder from './reactbits/StarBorder.jsx';
 import logo from '../assets/logo.jpg';
 import {
   DEFAUTS,
-  FORMULES_EXEMPLE,
   NBSP,
   NNBSP,
-  calcFormule,
-  calcPack,
+  TYPES,
+  calc,
   charge,
   compare,
   copie,
@@ -23,9 +22,10 @@ import {
   enregistre,
   estEntier,
   euros,
+  formule,
   nombre,
-  nomFormule,
   pluriel,
+  prixDistanciel,
   seances
 } from './tarifs.js';
 
@@ -37,13 +37,7 @@ const ICONES = {
   check: <path d="M4 12L9.5 17.5L20 7" fill="none" stroke="currentColor" strokeWidth="2" />,
   arrow: <path d="M3 12H19.5M13 5.5L19.5 12L13 18.5" fill="none" stroke="currentColor" strokeWidth="2" />,
   plus: <path d="M12 4V20M4 12H20" fill="none" stroke="currentColor" strokeWidth="2" />,
-  close: <path d="M5 5L19 19M19 5L5 19" fill="none" stroke="currentColor" strokeWidth="2" />,
-  info: (
-    <>
-      <path d="M3 12A9 9 0 1 0 21 12A9 9 0 1 0 3 12Z M12 11V17" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path d="M11 7L13 7L13 9L11 9Z" fill="currentColor" />
-    </>
-  )
+  close: <path d="M5 5L19 19M19 5L5 19" fill="none" stroke="currentColor" strokeWidth="2" />
 };
 
 function Icone({ nom, className = '' }) {
@@ -56,7 +50,7 @@ function Icone({ nom, className = '' }) {
 
 // Un prix qui roule chiffre par chiffre quand il change (CountUp de React Bits, mode « roll »)
 function Prix({ value, depart, duree = 0.9, delai = 0, className = '' }) {
-  const [from] = useState(() => (depart ?? value));
+  const [from] = useState(() => depart ?? value);
   return (
     <CountUp
       className={className}
@@ -75,7 +69,7 @@ function Prix({ value, depart, duree = 0.9, delai = 0, className = '' }) {
   );
 }
 
-function Segmented({ id, label, options, value, onChange }) {
+function Segmented({ id, label, ariaLabel, options, value, onChange }) {
   const refs = useRef([]);
   const index = Math.max(
     0,
@@ -93,10 +87,18 @@ function Segmented({ id, label, options, value, onChange }) {
   };
   return (
     <div className="control">
-      <p className="label" id={`lbl-${id}`}>
-        {label}
-      </p>
-      <div className="segmented label" role="radiogroup" aria-labelledby={`lbl-${id}`} onKeyDown={onKeyDown}>
+      {label && (
+        <p className="label" id={`lbl-${id}`}>
+          {label}
+        </p>
+      )}
+      <div
+        className="segmented label"
+        role="radiogroup"
+        aria-labelledby={label ? `lbl-${id}` : undefined}
+        aria-label={label ? undefined : ariaLabel}
+        onKeyDown={onKeyDown}
+      >
         {options.map((o, i) => {
           const on = i === index;
           return (
@@ -174,153 +176,185 @@ function Hero() {
           accentColor={OR.o500}
           hoverEffect="lift"
         />
-        <p className="body-lg muted">
-          La séance, le pack et les formules au mois, côte à côte. Les économies se calculent toutes seules.
-        </p>
+        <p className="body-lg muted">Coaching en salle à Lyon ou à distance. Ce que tu économises se calcule tout seul.</p>
       </div>
     </header>
   );
 }
 
-function Pack({ tarifs }) {
+// Le mois d’une formule : une case par séance en salle, une ligne pour le suivi à distance
+function Mois({ f }) {
   const reduit = useReducedMotion();
-  const p = calcPack(tarifs);
-  const n = Math.round(tarifs.pack.n);
-  const libres = p.eco > 0 ? Math.min(n, Math.max(0, Math.floor(p.offertes + 1e-9))) : 0;
-  const pips = n >= 2 && n <= 20;
+  const n = f.seances;
+  const distance = f.type !== 'presentiel';
+  if (n === 0 && !distance) return null;
+  return (
+    <div className="mois" aria-hidden="true">
+      {n > 0 && n <= 20 && (
+        <ol className="pips" style={{ '--n': Math.max(n, 4) }}>
+          {Array.from({ length: n }, (_, i) => (
+            <motion.li
+              key={`${f.id}-${i}`}
+              className="pip"
+              initial={reduit ? false : { scale: 0.4, opacity: 0.2 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.55 + i * 0.09, type: 'spring', stiffness: 420, damping: 16 }}
+            />
+          ))}
+        </ol>
+      )}
+      {distance && (
+        <motion.div
+          key={`${f.id}-ligne`}
+          className="ligne"
+          initial={reduit ? false : { scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ delay: 0.55 + n * 0.09, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        />
+      )}
+      <div className="mois-legende label">
+        {n > 0 && (
+          <span>
+            <i className="leg-pip" />
+            {n} en salle
+          </span>
+        )}
+        {distance && (
+          <span>
+            <i className="leg-ligne" />
+            Suivi à distance
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
-  let offre;
-  if (p.eco <= 0) offre = 'Même prix qu’à l’unité';
-  else if (Math.abs(p.offertes - 1) < 1e-9)
-    offre = (
-      <>
-        La {n}
-        <sup>e</sup> séance est offerte
-      </>
-    );
-  else if (Math.abs(p.offertes - Math.round(p.offertes)) < 1e-9) offre = `${nombre(p.offertes)} séances offertes`;
-  else offre = `Tu économises ${euros(p.eco)} sur le pack`;
+function Phare({ tarifs }) {
+  const f = formule(tarifs, tarifs.phare) || tarifs.formules[1];
+  const c = calc(tarifs, f);
+  const inclus = [];
+  if (f.seances > 0) inclus.push(`${seances(f.seances)} en salle par mois avec ton coach`);
+  if (f.type !== 'presentiel') inclus.push('Suivi à distance tout le mois');
+  if (c.parSeance != null && c.ecoSeance > 0.004)
+    inclus.push(`${euros(c.parSeance)} la séance au lieu de ${euros(tarifs.seance)}`);
+  if (c.ecoAn > 0.5) inclus.push(`${euros(c.ecoAn)} économisés sur 12 mois par rapport à la carte`);
 
   return (
-    <section className="section" aria-labelledby="t-seance">
-      <h2 className="title" id="t-seance">
-        Séance et pack
-      </h2>
-
-      <div className="unit">
-        <div className="unit-text">
-          <p className="label eyebrow">
-            <Icone nom="triangle" />À l’unité
-          </p>
-          <p className="small muted">Sans engagement</p>
+    <section className="section" aria-labelledby="t-phare">
+      <div className="phare">
+        <div className="phare-top">
+          <p className="label">La formule phare</p>
+          <h2 className="phare-nom" id="t-phare">
+            {f.nom}
+          </h2>
         </div>
         <p className="price-line">
-          <Prix className="figure" value={tarifs.seance} />
-          <span className="label-lg">/ séance</span>
+          <span className="figure-lg">
+            <Prix key={f.id} value={f.prix} depart={0} duree={1.6} delai={0.35} />
+          </span>
+          <span className="label-lg">/ mois</span>
         </p>
-      </div>
-
-      <div className="pack">
-        <div className="pack-top">
-          <p className="label">Pack {seances(tarifs.pack.n)}</p>
-          <p className="figure-lg">
-            <Prix value={tarifs.pack.prix} depart={0} duree={1.6} delai={0.35} />
+        {c.eco > 0.5 && (
+          <p className="phare-sub">
+            au lieu de <s>{euros(c.carte)}</s> à la carte
           </p>
-          <p className="pack-sub">
-            {p.eco > 0 && (
-              <>
-                au lieu de <s>{euros(p.plein)}</s>,{' '}
-              </>
-            )}
-            soit <strong>{euros(p.parSeance)}</strong> la séance
-          </p>
-        </div>
-        {pips && (
-          <>
-            <ol
-              className="pips"
-              style={{ '--n': n }}
-              aria-label={`${n - libres} ${pluriel(n - libres, 'séance')} ${pluriel(n - libres, 'payée')}, ${libres} ${pluriel(libres, 'séance')} ${pluriel(libres, 'offerte')}`}
-            >
-              {Array.from({ length: n }, (_, i) => {
-                const libre = i >= n - libres;
-                return (
-                  <motion.li
-                    key={`${n}-${libres}-${i}`}
-                    className={`pip${libre ? ' free' : ''}`}
-                    initial={reduit ? false : { scale: 0.4, opacity: 0.25 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={
-                      libre
-                        ? { delay: 0.6 + i * 0.07, type: 'spring', stiffness: 420, damping: 14 }
-                        : { delay: 0.6 + i * 0.07, duration: 0.25, ease: 'easeOut' }
-                    }
-                  >
-                    {libre && <Icone nom="check" />}
-                  </motion.li>
-                );
-              })}
-            </ol>
-            {libres > 0 && (
-              <div className="pips-legend label">
-                <span>
-                  {n - libres} {pluriel(n - libres, 'payée')}
-                </span>
-                <span>
-                  {libres} {pluriel(libres, 'offerte')}
-                </span>
-              </div>
-            )}
-          </>
         )}
-        <p className="pack-free">{offre}</p>
+        <Mois f={f} />
+        <ul className="inclus">
+          {inclus.map(t => (
+            <li key={t}>
+              <Icone nom="check" />
+              <span>{t}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
 }
 
-function CarteFormule({ tarifs, f, i, meilleur, onCompare }) {
-  const c = calcFormule(tarifs, f);
-  const lignes = [];
-  if (c.ecartPackSeance > 0.004)
-    lignes.push({
-      ok: true,
-      texte: (
-        <>
-          <strong>{euros(c.ecartPackSeance)}</strong> de moins par séance qu’avec le pack
-        </>
-      )
-    });
-  else if (c.ecartPackSeance < -0.004)
-    lignes.push({
-      ok: false,
-      texte: (
-        <>
-          <strong>{euros(-c.ecartPackSeance)}</strong> de plus par séance qu’avec le pack
-        </>
-      )
-    });
-  else lignes.push({ ok: false, texte: 'Même prix par séance que le pack' });
-  if (c.ecartUniteSeance > 0.004)
-    lignes.push({
-      ok: true,
-      texte: (
-        <>
-          <strong>{euros(c.ecartUniteSeance)}</strong> de moins par séance qu’à l’unité
-        </>
-      )
-    });
-  if (c.ecartPackAn > 0.5)
-    lignes.push({
-      ok: true,
-      texte: (
-        <>
-          <strong>{euros(c.ecartPackAn)}</strong> économisés sur 12 mois par rapport au pack
-        </>
-      )
-    });
+function Essai({ tarifs }) {
+  return (
+    <StarBorder
+      as="section"
+      className="star-wrap"
+      color={OR.o100}
+      trailColor={OR.o500}
+      radius={0}
+      thickness={1.5}
+      duration={6}
+      trailLength={0.35}
+      stars={2}
+      glow={0.9}
+      hover="none"
+      clickPulse={false}
+      backgroundColor="#13110e"
+      borderColor="rgba(233, 180, 58, 0.4)"
+      aria-labelledby="t-essai"
+    >
+      <div className="essai">
+        <div className="essai-text">
+          <p className="label eyebrow">
+            <Icone nom="triangle" />
+            Pour commencer
+          </p>
+          <h2 className="heading" id="t-essai">
+            Séance d’essai + bilan
+          </h2>
+          <p className="small muted">Une première séance en salle et un bilan, avant de choisir ta formule.</p>
+        </div>
+        <p className="figure">
+          <Prix value={tarifs.essai} />
+        </p>
+      </div>
+    </StarBorder>
+  );
+}
 
-  const carte = (
+function CarteFormule({ tarifs, f, phare, onCompare }) {
+  const c = calc(tarifs, f);
+  const lignes = [];
+  if (c.eco > 0.5)
+    lignes.push(
+      <>
+        <strong>{euros(c.eco)}</strong> de moins par mois qu’à la carte
+      </>
+    );
+  if (c.ecoSeance > 0.004)
+    lignes.push(
+      <>
+        <strong>{euros(c.ecoSeance)}</strong> de moins par séance qu’à l’unité
+      </>
+    );
+  if (c.ecoAn > 0.5)
+    lignes.push(
+      <>
+        <strong>{euros(c.ecoAn)}</strong> économisés sur 12 mois
+      </>
+    );
+
+  let detail;
+  if (f.type === 'presentiel')
+    detail = (
+      <>
+        <strong>{euros(c.parSeance)}</strong> la séance · {seances(f.seances)} par mois
+      </>
+    );
+  else if (f.type === 'hybride')
+    detail = (
+      <>
+        <strong>{seances(f.seances)}</strong> en salle par mois + suivi à distance
+      </>
+    );
+  else
+    detail = (
+      <>
+        Suivi <strong>100 % à distance</strong>, sans séance en salle
+      </>
+    );
+
+  return (
     <SpotlightCard
       className="card"
       ambient
@@ -332,166 +366,97 @@ function CarteFormule({ tarifs, f, i, meilleur, onCompare }) {
       proximity={60}
       style={{
         '--spotlight-card-surface': '#13110e',
-        '--spotlight-card-border': meilleur ? 'transparent' : 'rgba(233, 180, 58, 0.14)',
+        '--spotlight-card-border': phare ? 'rgba(233, 180, 58, 0.6)' : 'rgba(233, 180, 58, 0.14)',
         '--spotlight-card-shadow': 'none'
       }}
     >
       <div className="card-head">
-        <h3 className="heading">{nomFormule(f, i)}</h3>
-        {meilleur ? (
+        <h3 className="heading">{f.nom}</h3>
+        {phare && (
           <span className="tag label is-best">
-            <ShinyText text="Meilleur prix" color={OR.o500} shineColor={OR.o100} speed={2} delay={1.2} />
+            <ShinyText text="Formule phare" color={OR.o500} shineColor={OR.o100} speed={2} delay={1.2} />
           </span>
-        ) : (
-          <span className="tag label">{seances(f.seances)} / mois</span>
         )}
       </div>
       <p className="price-line">
         <Prix className="figure" value={f.prix} />
         <span className="label-lg">/ mois</span>
       </p>
-      <p className="per">
-        <strong>{euros(c.parSeance)}</strong> la séance
-        {meilleur ? ` · ${seances(f.seances)} par mois` : ''}
-      </p>
-      <ul className="gains">
-        {lignes.map((l, k) => (
-          <li key={k} className={l.ok ? '' : 'is-worse'}>
-            <Icone nom={l.ok ? 'check' : 'info'} />
-            <span>{l.texte}</span>
-          </li>
-        ))}
-      </ul>
-      <button type="button" className="link-btn label" onClick={() => onCompare(i)}>
-        Comparer
-        <Icone nom="arrow" />
-      </button>
+      <p className="per">{detail}</p>
+      {lignes.length > 0 && (
+        <ul className="gains">
+          {lignes.map((l, k) => (
+            <li key={k}>
+              <Icone nom="check" />
+              <span>{l}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {f.type !== 'distanciel' && (
+        <button type="button" className="link-btn label" onClick={() => onCompare(f)}>
+          Comparer
+          <Icone nom="arrow" />
+        </button>
+      )}
     </SpotlightCard>
-  );
-
-  if (!meilleur) return carte;
-  return (
-    <StarBorder
-      as="div"
-      className="star-wrap"
-      color={OR.o100}
-      trailColor={OR.o500}
-      radius={0}
-      thickness={1.5}
-      duration={5}
-      trailLength={0.35}
-      stars={2}
-      glow={0.9}
-      hover="none"
-      clickPulse={false}
-      backgroundColor="transparent"
-      borderColor="rgba(233, 180, 58, 0.4)"
-    >
-      {carte}
-    </StarBorder>
   );
 }
 
-function Formules({ tarifs, montrerExemple, onCompare }) {
-  const pack = calcPack(tarifs);
-  let meilleur = -1;
-  let min = Infinity;
-  tarifs.formules.forEach((f, i) => {
-    const v = f.prix / f.seances;
-    if (v < min - 1e-9) {
-      min = v;
-      meilleur = i;
-    }
-  });
-  const montrerMeilleur = tarifs.formules.length > 1 && min < pack.parSeance;
+function Formules({ tarifs, onCompare }) {
+  const typePhare = formule(tarifs, tarifs.phare)?.type ?? 'hybride';
+  const [groupe, setGroupe] = useState(typePhare);
+  useEffect(() => setGroupe(typePhare), [typePhare]);
+  const type = TYPES.find(t => t.id === groupe);
+  const liste = tarifs.formules.filter(f => f.type === groupe);
 
   return (
     <section className="section" aria-labelledby="t-formules">
       <div className="section-head">
         <h2 className="title" id="t-formules">
-          Formules au mois
+          Toutes les formules
         </h2>
-        <p className="muted">Chaque formule comparée au pack et à la séance à l’unité.</p>
+        <p className="muted">Prix au mois, comparés aux mêmes séances et au même suivi payés à la carte.</p>
       </div>
-      {montrerExemple && (
-        <p className="note">
-          <Icone nom="info" />
-          <span>Prix d’exemple. Mets tes vrais prix dans Réglages, en bas de la page.</span>
-        </p>
-      )}
-      {tarifs.formules.length ? (
-        <div className="formules">
-          {tarifs.formules.map((f, i) => (
-            <CarteFormule
-              key={i}
-              tarifs={tarifs}
-              f={f}
-              i={i}
-              meilleur={montrerMeilleur && i === meilleur}
-              onCompare={onCompare}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="empty">Aucune formule au mois pour l’instant. Ajoute-en une dans Réglages.</p>
-      )}
+      <Segmented
+        id="groupe"
+        ariaLabel="Type de formule"
+        options={TYPES.map(t => ({ value: t.id, label: t.nom }))}
+        value={groupe}
+        onChange={setGroupe}
+      />
+      <p className="type-desc">{type.desc}</p>
+      <motion.div
+        key={groupe}
+        className="formules"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+      >
+        {liste.map(f => (
+          <CarteFormule key={f.id} tarifs={tarifs} f={f} phare={f.id === tarifs.phare} onCompare={onCompare} />
+        ))}
+      </motion.div>
     </section>
   );
 }
 
 function Comparateur({ tarifs, choix, setChoix, mois, setMois, sectionRef }) {
-  const c = compare(tarifs, choix, mois);
+  const f = formule(tarifs, choix) || formule(tarifs, 'hybride-1');
+  const type = TYPES.find(t => t.id === f.type);
+  const memeType = tarifs.formules.filter(g => g.type === f.type);
+  const c = compare(tarifs, f, mois);
   const periode = mois === 1 ? 'par mois' : `sur ${mois} mois`;
-  const offertes = Math.floor(c.vsUnite / tarifs.seance + 1e-9);
+  const max = Math.max(c.carte, c.prix);
+  const offertes = Math.floor(c.eco / tarifs.seance + 1e-9);
+  const ressort = { type: 'spring', stiffness: 140, damping: 22 };
 
-  let resultat;
-  if (c.vsPack > 0.5) {
-    resultat = (
-      <>
-        <p className="label muted">Tu économises {periode}</p>
-        <p className="figure-xl accent">
-          <Prix value={c.vsPack} duree={1.1} />
-        </p>
-        <p>
-          par rapport au pack. Et <strong>{euros(c.vsUnite)}</strong> par rapport à la séance à l’unité
-          {offertes >= 1 ? `, l’équivalent de ${seances(offertes)} ${pluriel(offertes, 'offerte')}.` : '.'}
-        </p>
-      </>
-    );
-  } else if (c.vsPack < -0.5) {
-    resultat = (
-      <>
-        <p className="label muted">Le pack revient moins cher</p>
-        <p className="figure-xl accent">
-          <Prix value={-c.vsPack} duree={1.1} />
-        </p>
-        <p>
-          d’écart {periode} en faveur du pack.
-          {c.vsUnite > 0.5 && (
-            <>
-              {' '}
-              La formule reste moins chère que l’unité de <strong>{euros(c.vsUnite)}</strong>.
-            </>
-          )}
-        </p>
-      </>
-    );
-  } else {
-    resultat = (
-      <>
-        <p className="label muted">Même prix que le pack</p>
-        <p>
-          La formule et le pack reviennent au même {periode}.
-          {c.vsUnite > 0.5 && (
-            <>
-              {' '}
-              Tu économises <strong>{euros(c.vsUnite)}</strong> par rapport à l’unité.
-            </>
-          )}
-        </p>
-      </>
-    );
-  }
+  const changeType = id => {
+    if (id === f.type) return;
+    const liste = tarifs.formules.filter(g => g.type === id);
+    const cible = liste.find(g => g.id === tarifs.phare) || liste[Math.min(1, liste.length - 1)];
+    setChoix(cible.id);
+  };
 
   return (
     <section className="section" id="compare" ref={sectionRef} aria-labelledby="t-compare">
@@ -499,15 +464,22 @@ function Comparateur({ tarifs, choix, setChoix, mois, setMois, sectionRef }) {
         <h2 className="title" id="t-compare">
           Compare
         </h2>
-        <p className="muted">Le même nombre de séances, trois façons de payer.</p>
+        <p className="muted">La formule face aux mêmes séances et au même suivi payés à la carte.</p>
       </div>
 
       <div className="controls">
         <Segmented
-          id="formule"
+          id="type"
           label="Formule"
-          options={tarifs.formules.map((f, i) => ({ value: i, label: nomFormule(f, i) }))}
-          value={choix}
+          options={TYPES.filter(t => t.id !== 'distanciel').map(t => ({ value: t.id, label: t.nom }))}
+          value={f.type}
+          onChange={changeType}
+        />
+        <Segmented
+          id={`rythme-${f.type}`}
+          label={type.rythme}
+          options={memeType.map(g => ({ value: g.id, label: g.court }))}
+          value={f.id}
           onChange={setChoix}
         />
         <Segmented
@@ -524,51 +496,118 @@ function Comparateur({ tarifs, choix, setChoix, mois, setMois, sectionRef }) {
       </div>
 
       <p className="context">
-        <strong>{seances(c.f.seances)}</strong> par mois
+        <strong>{f.nom}</strong> : {seances(f.seances)} en salle par mois
+        {f.type === 'hybride' ? ' et le suivi à distance' : ''}
         {mois > 1 && (
           <>
             , soit <strong>{seances(c.total)}</strong> sur {mois} mois
           </>
         )}
+        .
       </p>
 
       <div className="bars">
-        {c.lignes.map(l => {
-          const best = Math.abs(l.cout - c.min) < 0.005;
-          const largeur = c.max > 0 ? (l.cout / c.max) * 100 : 0;
-          return (
-            <div key={l.cle} className={`bar is-${l.cle}`}>
-              <div className="bar-top">
-                <span className="bar-name">
-                  {l.nom}
-                  {best && <span className="tag label is-best">Le moins cher</span>}
-                </span>
-                <span className="bar-val">
-                  <Prix value={l.cout} />
-                </span>
-              </div>
-              <div className="track">
-                <motion.div
-                  className="fill"
-                  initial={false}
-                  animate={{ width: `${largeur}%` }}
-                  transition={{ type: 'spring', stiffness: 140, damping: 22 }}
-                />
-              </div>
-            </div>
-          );
-        })}
+        <div className="bar is-carte">
+          <div className="bar-top">
+            <span className="bar-name">À la carte</span>
+            <span className="bar-val">
+              <Prix value={c.carte} />
+            </span>
+          </div>
+          <div className="track">
+            <motion.div
+              className="fill fill-seances"
+              initial={false}
+              animate={{ width: `${max > 0 ? (c.carteSeances / max) * 100 : 0}%` }}
+              transition={ressort}
+            />
+            <motion.div
+              className="fill fill-distance"
+              initial={false}
+              animate={{ width: `${max > 0 ? (c.carteDistance / max) * 100 : 0}%` }}
+              transition={ressort}
+            />
+          </div>
+          <p className="small muted">
+            {seances(c.total)} × {euros(tarifs.seance)}
+            {c.carteDistance > 0 ? ` + suivi à distance ${euros(prixDistanciel(tarifs))} × ${mois} mois` : ''}
+          </p>
+        </div>
+        <div className="bar is-formule">
+          <div className="bar-top">
+            <span className="bar-name">
+              Avec la formule
+              {c.eco > 0.5 && <span className="tag label is-best">Le moins cher</span>}
+            </span>
+            <span className="bar-val">
+              <Prix value={c.prix} />
+            </span>
+          </div>
+          <div className="track">
+            <motion.div
+              className="fill"
+              initial={false}
+              animate={{ width: `${max > 0 ? (c.prix / max) * 100 : 0}%` }}
+              transition={ressort}
+            />
+          </div>
+          <p className="small muted">
+            {euros(f.prix)} × {mois} mois
+            {c.parSeance != null ? `, soit ${euros(c.parSeance)} la séance` : ''}
+          </p>
+        </div>
       </div>
 
       <div className="result" aria-live="polite">
-        {resultat}
+        {c.eco > 0.5 ? (
+          <>
+            <p className="label muted">Tu économises {periode}</p>
+            <p className="figure-xl accent">
+              <Prix value={c.eco} duree={1.1} />
+            </p>
+            <p>
+              par rapport à la carte
+              {offertes >= 1 ? `, l’équivalent de ${seances(offertes)} ${pluriel(offertes, 'offerte')}.` : '.'}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="label muted">Même prix qu’à la carte</p>
+            <p>Cette formule coûte autant que les mêmes séances et le même suivi payés à la carte.</p>
+          </>
+        )}
       </div>
-      <p className="small muted">Le pack est compté au prorata : {euros(c.pack.parSeance)} la séance.</p>
+      <p className="small muted">
+        À la carte : séance à {euros(tarifs.seance)}, suivi à distance à {euros(prixDistanciel(tarifs))} par mois.
+        « 1 fois par semaine » est compté 4 séances par mois.
+      </p>
     </section>
   );
 }
 
-function Champ({ id, label, valeur, entier, onValide, inputMode = 'decimal' }) {
+function SansFormule({ tarifs }) {
+  return (
+    <section className="section" aria-labelledby="t-unite">
+      <h2 className="title" id="t-unite">
+        Sans formule
+      </h2>
+      <div className="unit">
+        <div className="unit-text">
+          <p className="label eyebrow">
+            <Icone nom="triangle" />À l’unité
+          </p>
+          <p className="small muted">Une séance en salle, quand tu veux</p>
+        </div>
+        <p className="price-line">
+          <Prix className="figure" value={tarifs.seance} />
+          <span className="label-lg">/ séance</span>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function Champ({ id, label, valeur, onValide }) {
   const [invalide, setInvalide] = useState(false);
   return (
     <label className="field" htmlFor={id}>
@@ -576,13 +615,13 @@ function Champ({ id, label, valeur, entier, onValide, inputMode = 'decimal' }) {
       <input
         id={id}
         type="text"
-        inputMode={inputMode}
+        inputMode="decimal"
         autoComplete="off"
         defaultValue={valeur}
         aria-invalid={invalide}
         onChange={e => {
           const v = parseFloat(e.target.value.replace(/\s/g, '').replace(',', '.'));
-          const ok = Number.isFinite(v) && v > 0 && (!entier || Math.round(v) === v);
+          const ok = Number.isFinite(v) && v > 0;
           setInvalide(!ok);
           if (ok) onValide(v);
         }}
@@ -593,7 +632,7 @@ function Champ({ id, label, valeur, entier, onValide, inputMode = 'decimal' }) {
 
 const enChamp = v => nombre(v, 2).replace(/\s/g, '');
 
-function Reglages({ tarifs, version, modifie, ajoute, retire, reinitialise, status }) {
+function Reglages({ tarifs, version, modifie, reinitialise, status }) {
   const [confirme, setConfirme] = useState(false);
   useEffect(() => {
     if (!confirme) return undefined;
@@ -610,84 +649,65 @@ function Reglages({ tarifs, version, modifie, ajoute, retire, reinitialise, stat
       </summary>
       <div className="settings-body" key={version}>
         <p className="small muted">
-          Pour toi, coach. Change tes prix ici : tout le reste se recalcule. Ils restent enregistrés sur ce téléphone.
+          Pour toi, coach. Change un prix ici : tout le reste se recalcule. Les changements restent sur ce téléphone.
         </p>
 
         <fieldset>
-          <legend className="label">Séance et pack</legend>
-          <div className="grid-3">
+          <legend className="label">Formule mise en avant</legend>
+          <label className="field" htmlFor="in-phare">
+            <span>Formule phare</span>
+            <select id="in-phare" value={tarifs.phare} onChange={e => modifie(t => (t.phare = e.target.value))}>
+              {TYPES.map(type => (
+                <optgroup key={type.id} label={type.nom}>
+                  {tarifs.formules
+                    .filter(f => f.type === type.id)
+                    .map(f => (
+                      <option key={f.id} value={f.id}>
+                        {f.nom}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend className="label">Séances</legend>
+          <div className="grid-2">
+            <Champ
+              id="in-essai"
+              label="Essai + bilan (€)"
+              valeur={enChamp(tarifs.essai)}
+              onValide={v => modifie(t => (t.essai = v))}
+            />
             <Champ
               id="in-seance"
-              label="Séance (€)"
+              label="À l’unité (€)"
               valeur={enChamp(tarifs.seance)}
               onValide={v => modifie(t => (t.seance = v))}
-            />
-            <Champ
-              id="in-pack-n"
-              label="Séances du pack"
-              valeur={String(tarifs.pack.n)}
-              entier
-              inputMode="numeric"
-              onValide={v => modifie(t => (t.pack.n = v))}
-            />
-            <Champ
-              id="in-pack-prix"
-              label="Pack (€)"
-              valeur={enChamp(tarifs.pack.prix)}
-              onValide={v => modifie(t => (t.pack.prix = v))}
             />
           </div>
         </fieldset>
 
-        <fieldset>
-          <legend className="label">Formules au mois</legend>
-          <div className="formules">
-            {tarifs.formules.map((f, i) => (
-              <div className="frow" key={i}>
-                <label className="field field-name" htmlFor={`f-nom-${i}`}>
-                  <span>Nom de la formule</span>
-                  <input
-                    id={`f-nom-${i}`}
-                    type="text"
-                    autoComplete="off"
-                    defaultValue={f.nom}
-                    maxLength={40}
-                    onChange={e => {
-                      const nom = e.target.value;
-                      modifie(t => (t.formules[i].nom = nom));
-                    }}
+        {TYPES.map(type => (
+          <fieldset key={type.id}>
+            <legend className="label">{type.nom} · prix par mois</legend>
+            <div className="grid-2">
+              {tarifs.formules
+                .filter(f => f.type === type.id)
+                .map(f => (
+                  <Champ
+                    key={f.id}
+                    id={`f-${f.id}`}
+                    label={`${f.nom.replace(/^(Hybride|Présentiel|Distanciel) /, '')} (€)`}
+                    valeur={enChamp(f.prix)}
+                    onValide={v => modifie(t => (t.formules.find(g => g.id === f.id).prix = v))}
                   />
-                </label>
-                <Champ
-                  id={`f-seances-${i}`}
-                  label="Séances / mois"
-                  valeur={String(f.seances)}
-                  entier
-                  inputMode="numeric"
-                  onValide={v => modifie(t => (t.formules[i].seances = v))}
-                />
-                <Champ
-                  id={`f-prix-${i}`}
-                  label="Prix / mois (€)"
-                  valeur={enChamp(f.prix)}
-                  onValide={v => modifie(t => (t.formules[i].prix = v))}
-                />
-                <button
-                  type="button"
-                  className="icon-btn"
-                  aria-label={`Supprimer la formule ${nomFormule(f, i)}`}
-                  onClick={() => retire(i)}
-                >
-                  <Icone nom="close" />
-                </button>
-              </div>
-            ))}
-          </div>
-          <button type="button" className="btn" onClick={ajoute}>
-            <Icone nom="plus" />
-            <span className="label">Ajouter une formule</span>
-          </button>
-        </fieldset>
+                ))}
+            </div>
+          </fieldset>
+        ))}
 
         <div className="settings-actions">
           <button
@@ -702,7 +722,7 @@ function Reglages({ tarifs, version, modifie, ajoute, retire, reinitialise, stat
               reinitialise();
             }}
           >
-            <span className="label">{confirme ? 'Touche encore pour confirmer' : 'Revenir aux prix d’origine'}</span>
+            <span className="label">{confirme ? 'Touche encore pour confirmer' : 'Revenir à la grille d’origine'}</span>
           </button>
         </div>
       </div>
@@ -713,18 +733,21 @@ function Reglages({ tarifs, version, modifie, ajoute, retire, reinitialise, stat
   );
 }
 
+const premierComparable = t => {
+  const p = formule(t, t.phare);
+  return p && p.type !== 'distanciel' ? p.id : 'hybride-1';
+};
+
 export default function App() {
-  const [depart] = useState(() => charge());
-  const [tarifs, setTarifs] = useState(() => depart || copie(DEFAUTS));
-  const [perso, setPerso] = useState(() => !!depart);
-  const [choix, setChoix] = useState(1);
+  const [tarifs, setTarifs] = useState(() => charge() || copie(DEFAUTS));
+  const [choix, setChoix] = useState(() => premierComparable(tarifs));
   const [mois, setMois] = useState(12);
   const [version, setVersion] = useState(0);
   const [status, setStatus] = useState('');
   const compareRef = useRef(null);
   const minuteur = useRef(0);
-
-  const choixValide = Math.min(choix, Math.max(0, tarifs.formules.length - 1));
+  const tarifsRef = useRef(tarifs);
+  tarifsRef.current = tarifs;
 
   const annonce = texte => {
     setStatus(texte);
@@ -732,52 +755,31 @@ export default function App() {
     minuteur.current = setTimeout(() => setStatus(''), 2500);
   };
 
-  const applique = (suivant, remonte) => {
+  // Les champs gardent leur propre texte : on part toujours de l’état le plus récent.
+  const modifie = fn => {
+    const suivant = copie(tarifsRef.current);
+    const phareAvant = suivant.phare;
+    fn(suivant);
+    tarifsRef.current = suivant;
     setTarifs(suivant);
-    setPerso(true);
-    if (remonte) setVersion(v => v + 1);
+    if (suivant.phare !== phareAvant) setChoix(premierComparable(suivant));
     annonce(
       enregistre(suivant) ? 'Enregistré sur ce téléphone.' : 'Modifs visibles, mais ce navigateur ne peut pas les garder.'
     );
   };
 
-  // Les champs gardent leur propre texte : on lit toujours l’état le plus récent pour les modifs en rafale.
-  const tarifsRef = useRef(tarifs);
-  tarifsRef.current = tarifs;
-  const modifieRecent = fn => {
-    const suivant = copie(tarifsRef.current);
-    fn(suivant);
-    tarifsRef.current = suivant;
-    applique(suivant, false);
-  };
-
-  const ajoute = () => {
-    const suivant = copie(tarifsRef.current);
-    suivant.formules.push({
-      nom: `Formule ${suivant.formules.length + 1}`,
-      seances: 4,
-      prix: Math.round(suivant.seance * 4 * 0.9)
-    });
-    applique(suivant, true);
-  };
-
-  const retire = i => {
-    const suivant = copie(tarifsRef.current);
-    suivant.formules.splice(i, 1);
-    applique(suivant, true);
-  };
-
   const reinitialise = () => {
     efface();
-    setTarifs(copie(DEFAUTS));
-    setPerso(false);
-    setChoix(1);
+    const t = copie(DEFAUTS);
+    tarifsRef.current = t;
+    setTarifs(t);
+    setChoix(premierComparable(t));
     setVersion(v => v + 1);
-    annonce('Prix d’origine remis.');
+    annonce('Grille d’origine remise.');
   };
 
-  const versComparateur = i => {
-    setChoix(i);
+  const versComparateur = f => {
+    setChoix(f.id);
     requestAnimationFrame(() => compareRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
@@ -794,31 +796,19 @@ export default function App() {
     >
       <Hero />
       <main className="app">
-        <Pack tarifs={tarifs} />
-        <Formules
+        <Phare tarifs={tarifs} />
+        <Essai tarifs={tarifs} />
+        <Formules tarifs={tarifs} onCompare={versComparateur} />
+        <Comparateur
           tarifs={tarifs}
-          montrerExemple={!perso && FORMULES_EXEMPLE}
-          onCompare={versComparateur}
+          choix={choix}
+          setChoix={setChoix}
+          mois={mois}
+          setMois={setMois}
+          sectionRef={compareRef}
         />
-        {tarifs.formules.length > 0 && (
-          <Comparateur
-            tarifs={tarifs}
-            choix={choixValide}
-            setChoix={setChoix}
-            mois={mois}
-            setMois={setMois}
-            sectionRef={compareRef}
-          />
-        )}
-        <Reglages
-          tarifs={tarifs}
-          version={version}
-          modifie={modifieRecent}
-          ajoute={ajoute}
-          retire={retire}
-          reinitialise={reinitialise}
-          status={status}
-        />
+        <SansFormule tarifs={tarifs} />
+        <Reglages tarifs={tarifs} version={version} modifie={modifie} reinitialise={reinitialise} status={status} />
         <footer className="foot small">
           <span>YAZ Coaching · Lyon</span>
           <span>Tarifs en euros TTC</span>

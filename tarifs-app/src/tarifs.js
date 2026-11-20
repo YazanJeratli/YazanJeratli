@@ -1,39 +1,59 @@
-// Tes tarifs. La séance et le pack sont les tiens ; les formules au mois sont des exemples à remplacer.
+// Ta grille des formules YAZ Coaching.
+// « 1 fois par semaine » est compté 4 séances par mois.
+export const TYPES = [
+  { id: 'hybride', nom: 'Hybride', desc: 'Des séances en salle et un suivi à distance.', rythme: 'Rythme' },
+  { id: 'presentiel', nom: 'Présentiel', desc: '100 % en salle, avec ton coach.', rythme: 'Fois par semaine' },
+  { id: 'distanciel', nom: 'Distanciel', desc: '100 % à distance, sans séance en salle.', rythme: '' }
+];
+
 export const DEFAUTS = {
-  seance: 50,
-  pack: { n: 10, prix: 450 },
+  essai: 50,
+  seance: 60,
+  phare: 'hybride-1',
   formules: [
-    { nom: 'Essentiel', seances: 4, prix: 170 },
-    { nom: 'Régulier', seances: 8, prix: 320 },
-    { nom: 'Intensif', seances: 12, prix: 444 }
+    { id: 'hybride-2m', type: 'hybride', nom: 'Hybride 2 séances par mois', court: '2 / mois', seances: 2, prix: 220 },
+    { id: 'hybride-1', type: 'hybride', nom: 'Hybride 1 fois par semaine', court: '1 / sem', seances: 4, prix: 330 },
+    { id: 'hybride-2', type: 'hybride', nom: 'Hybride 2 fois par semaine', court: '2 / sem', seances: 8, prix: 500 },
+    { id: 'presentiel-1', type: 'presentiel', nom: 'Présentiel 1 fois par semaine', court: '1×', seances: 4, prix: 220 },
+    { id: 'presentiel-2', type: 'presentiel', nom: 'Présentiel 2 fois par semaine', court: '2×', seances: 8, prix: 390 },
+    { id: 'presentiel-3', type: 'presentiel', nom: 'Présentiel 3 fois par semaine', court: '3×', seances: 12, prix: 520 },
+    { id: 'presentiel-4', type: 'presentiel', nom: 'Présentiel 4 fois par semaine', court: '4×', seances: 16, prix: 660 },
+    { id: 'presentiel-5', type: 'presentiel', nom: 'Présentiel 5 fois par semaine', court: '5×', seances: 20, prix: 780 },
+    { id: 'distanciel-muscu', type: 'distanciel', nom: 'Distanciel musculation', court: 'Musculation', seances: 0, prix: 110 },
+    { id: 'distanciel-fa', type: 'distanciel', nom: 'Distanciel force athlétique', court: 'Force athlétique', seances: 0, prix: 100 }
   ]
 };
 
-// Passe à false quand les vrais prix des formules sont dans DEFAUTS.
-export const FORMULES_EXEMPLE = true;
+// Le suivi à distance « à la carte » est compté au prix du distanciel musculation,
+// comme dans ta grille (Hybride = Présentiel + 110 €).
+export const ID_DISTANCIEL_REF = 'distanciel-muscu';
 
-const CLE = 'yaz-tarifs-v1';
+const CLE = 'yaz-tarifs-v2';
 
 export const copie = o => JSON.parse(JSON.stringify(o));
+const positif = v => typeof v === 'number' && Number.isFinite(v) && v > 0;
 
-export function valide(t) {
-  if (!t || typeof t !== 'object') return false;
-  if (!(t.seance > 0) || !t.pack || !(t.pack.n > 0) || !(t.pack.prix > 0)) return false;
-  if (!Array.isArray(t.formules)) return false;
-  return t.formules.every(f => f && typeof f.nom === 'string' && f.seances > 0 && f.prix > 0);
-}
-
+// Relit les prix enregistrés sur le téléphone, formule par formule, par-dessus la grille.
 export function charge() {
   try {
     const brut = localStorage.getItem(CLE);
-    if (brut) {
-      const t = JSON.parse(brut);
-      if (valide(t)) return t;
+    if (!brut) return null;
+    const s = JSON.parse(brut);
+    if (!s || typeof s !== 'object') return null;
+    const t = copie(DEFAUTS);
+    if (positif(s.essai)) t.essai = s.essai;
+    if (positif(s.seance)) t.seance = s.seance;
+    if (Array.isArray(s.formules)) {
+      t.formules.forEach(f => {
+        const g = s.formules.find(x => x && x.id === f.id);
+        if (g && positif(g.prix)) f.prix = g.prix;
+      });
     }
+    if (t.formules.some(f => f.id === s.phare)) t.phare = s.phare;
+    return t;
   } catch (e) {
-    /* stockage indisponible */
+    return null;
   }
-  return null;
 }
 
 export function enregistre(t) {
@@ -74,45 +94,39 @@ export function euros(v) {
 export const nombre = (v, dec = 1) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: dec }).format(v);
 export const pluriel = (n, mot) => (n >= 2 ? `${mot}s` : mot);
 export const seances = n => `${nombre(n)}${NBSP}${pluriel(n, 'séance')}`;
-export const nomFormule = (f, i) => f.nom.trim() || `Formule ${i + 1}`;
 
-// Calculs
-export function calcPack(t) {
-  const plein = t.seance * t.pack.n;
-  const eco = plein - t.pack.prix;
-  return { parSeance: t.pack.prix / t.pack.n, plein, eco, offertes: eco / t.seance };
-}
+export const formule = (t, id) => t.formules.find(f => f.id === id);
+export const prixDistanciel = t => formule(t, ID_DISTANCIEL_REF)?.prix ?? 110;
 
-export function calcFormule(t, f) {
-  const pack = calcPack(t);
-  const parSeance = f.prix / f.seances;
+// Ce que coûteraient les mêmes services sans formule
+export function calc(t, f) {
+  const carteSeances = f.seances * t.seance;
+  const carteDistance = f.type === 'hybride' ? prixDistanciel(t) : 0;
+  const carte = carteSeances + carteDistance;
+  const eco = f.type === 'distanciel' ? 0 : carte - f.prix;
+  const parSeance = f.type === 'presentiel' && f.seances > 0 ? f.prix / f.seances : null;
   return {
+    carteSeances,
+    carteDistance,
+    carte,
+    eco,
+    ecoAn: eco * 12,
     parSeance,
-    ecartPackSeance: pack.parSeance - parSeance,
-    ecartUniteSeance: t.seance - parSeance,
-    ecartPackAn: (pack.parSeance * f.seances - f.prix) * 12
+    ecoSeance: parSeance == null ? 0 : t.seance - parSeance
   };
 }
 
-export function compare(t, i, mois) {
-  const f = t.formules[i];
-  const total = f.seances * mois;
-  const pack = calcPack(t);
-  const lignes = [
-    { cle: 'unite', nom: 'Séance à l’unité', cout: t.seance * total },
-    { cle: 'pack', nom: `Pack ${seances(t.pack.n)}`, cout: pack.parSeance * total },
-    { cle: 'formule', nom: `Formule ${nomFormule(f, i)}`, cout: f.prix * mois }
-  ];
-  const max = Math.max(...lignes.map(l => l.cout));
-  const min = Math.min(...lignes.map(l => l.cout));
+export function compare(t, f, mois) {
+  const c = calc(t, f);
   return {
     f,
-    total,
-    pack,
-    lignes,
-    max,
-    min,
-    vsPack: lignes[1].cout - lignes[2].cout,
-    vsUnite: lignes[0].cout - lignes[2].cout
+    mois,
+    total: f.seances * mois,
+    carteSeances: c.carteSeances * mois,
+    carteDistance: c.carteDistance * mois,
+    carte: c.carte * mois,
+    prix: f.prix * mois,
+    eco: (c.carte - f.prix) * mois,
+    parSeance: c.parSeance
   };
 }
