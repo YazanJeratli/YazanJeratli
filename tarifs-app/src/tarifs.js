@@ -24,6 +24,9 @@ export const DEFAUTS = {
   ]
 };
 
+// Parrainage : −10 % sur l’abonnement du parrain par filleul abonné, 2 filleuls au plus (−20 %).
+export const PARRAINAGE = { remiseParFilleul: 0.1, maxFilleuls: 2 };
+
 // Le suivi à distance « à la carte » est compté au prix du distanciel musculation,
 // comme dans ta grille (Hybride = Présentiel + 110 €).
 export const ID_DISTANCIEL_REF = 'distanciel-muscu';

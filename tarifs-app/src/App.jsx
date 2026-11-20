@@ -13,6 +13,7 @@ import {
   DEFAUTS,
   NBSP,
   NNBSP,
+  PARRAINAGE,
   TYPES,
   calc,
   charge,
@@ -720,6 +721,177 @@ function Comparateur({ tarifs, choix, setChoix, mois, setMois, sectionRef }) {
   );
 }
 
+const MESSAGE_PARRAIN =
+  'Je m’entraîne avec YAZ Coaching à Lyon (force athlétique et musculation). Viens faire une séance d’essai + bilan avec mon coach, et dis-lui que tu viens de ma part.';
+
+function Parrainage({ tarifs }) {
+  const reduit = useReducedMotion();
+  const [id, setId] = useState(tarifs.phare);
+  const [n, setN] = useState(1);
+  const [copie, setCopie] = useState('');
+  const texteRef = useRef(null);
+  const f = formule(tarifs, id) || formule(tarifs, tarifs.phare);
+  const max = PARRAINAGE.maxFilleuls;
+  const taux = PARRAINAGE.remiseParFilleul;
+  const remise = f.prix * taux * n;
+  const pct = Math.round(taux * 100);
+
+  const touche = i => setN(n === i ? i - 1 : i);
+
+  const copier = async () => {
+    try {
+      await navigator.clipboard.writeText(MESSAGE_PARRAIN);
+      setCopie('Message copié.');
+    } catch (e) {
+      const sel = window.getSelection();
+      const r = document.createRange();
+      r.selectNodeContents(texteRef.current);
+      sel.removeAllRanges();
+      sel.addRange(r);
+      setCopie('Texte sélectionné : copie-le avec ton téléphone.');
+    }
+    setTimeout(() => setCopie(''), 3000);
+  };
+
+  return (
+    <section className="section" id="parrainage" aria-labelledby="t-parrainage">
+      <div className="section-head">
+        <h2 className="title" id="t-parrainage">
+          Parrainage
+        </h2>
+        <p className="muted">Ton ami s’abonne, ton abonnement baisse. Chaque mois, tant qu’il reste.</p>
+      </div>
+
+      <ol className="etapes">
+        <li>
+          <span className="etape-num">1</span>
+          <div>
+            <p className="etape-titre">Ton ami fait sa séance d’essai</p>
+            <p className="small muted">Il dit qu’il vient de ta part.</p>
+          </div>
+        </li>
+        <li>
+          <span className="etape-num">2</span>
+          <div>
+            <p className="etape-titre">Il prend une formule</p>
+            <p className="small muted">La remise démarre après son premier mois payé.</p>
+          </div>
+        </li>
+        <li>
+          <span className="etape-num">3</span>
+          <div>
+            <p className="etape-titre">
+              Tu as −{pct}{NBSP}% sur ton abonnement
+            </p>
+            <p className="small muted">Chaque mois, tant qu’il reste abonné.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div className="parrain-calc">
+        <label className="field" htmlFor="pa-formule">
+          <span>Ton abonnement</span>
+          <select id="pa-formule" value={f.id} onChange={e => setId(e.target.value)}>
+            {TYPES.map(type => (
+              <optgroup key={type.id} label={type.nom}>
+                {tarifs.formules
+                  .filter(g => g.type === type.id)
+                  .map(g => (
+                    <option key={g.id} value={g.id}>
+                      {g.nom} · {euros(g.prix)}
+                    </option>
+                  ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+
+        <div className="control">
+          <p className="label">Filleuls abonnés · {max} maximum</p>
+          <div className="slots">
+            {Array.from({ length: max }, (_, k) => {
+              const i = k + 1;
+              const on = n >= i;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  className={`slot${on ? ' is-on' : ''}`}
+                  aria-pressed={on}
+                  aria-label={`Filleul ${i}`}
+                  onClick={() => touche(i)}
+                >
+                  {on && (
+                    <motion.span
+                      className="slot-fond"
+                      initial={reduit ? false : { scaleY: 0 }}
+                      animate={{ scaleY: 1 }}
+                      transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+                    />
+                  )}
+                  <span className="slot-pct">−{pct}{NBSP}%</span>
+                  <span className="slot-nom label">
+                    <Icone nom={on ? 'check' : 'plus'} />
+                    Filleul {i}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="parrain-res" aria-live="polite">
+          <div className="parrain-res-top">
+            <p className="label muted">
+              Ton abonnement avec {n} {pluriel(n, 'filleul')}
+            </p>
+            <span className={`badge label${n ? ' is-on' : ''}`}>
+              −{pct * n}{NBSP}%
+            </span>
+          </div>
+          <p className="price-line">
+            <span className="figure-lg">
+              <Prix value={f.prix - remise} />
+            </span>
+            <span className="label-lg">/ mois</span>
+          </p>
+          {n > 0 ? (
+            <p>
+              au lieu de <s>{euros(f.prix)}</s> : <strong className="accent">{euros(remise)} de moins par mois</strong>,
+              soit {euros(remise * 12)} sur 12 mois.
+            </p>
+          ) : (
+            <p className="muted">Touche un filleul pour voir la remise.</p>
+          )}
+        </div>
+      </div>
+
+      <ul className="regles small muted">
+        <li>
+          {max} filleuls maximum : −{pct * max}{NBSP}% au plus.
+        </li>
+        <li>La remise démarre après le premier mois payé du filleul et s’arrête s’il arrête son abonnement.</li>
+        <li>Le filleul doit être un nouveau client. Pas de cumul avec une autre promo.</li>
+      </ul>
+
+      <div className="message">
+        <p className="label muted">Le message à envoyer à tes amis</p>
+        <p className="message-texte" ref={texteRef}>
+          {MESSAGE_PARRAIN}
+        </p>
+        <div className="message-actions">
+          <button type="button" className="btn" onClick={copier}>
+            <span className="label">Copier le message</span>
+          </button>
+          <p className="small muted" role="status">
+            {copie}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function SansFormule({ tarifs }) {
   return (
     <section className="section" aria-labelledby="t-unite">
@@ -870,9 +1042,9 @@ function Reglages({ tarifs, version, modifie, reinitialise, status }) {
 
 const SECTIONS = [
   { id: 'phare', nom: 'Phare' },
-  { id: 'essai', nom: 'Essai' },
   { id: 'formules', nom: 'Formules' },
-  { id: 'compare', nom: 'Compare' }
+  { id: 'compare', nom: 'Compare' },
+  { id: 'parrainage', nom: 'Parrainage' }
 ];
 
 // Barre du bas : un appui pour sauter à la partie que tu expliques
@@ -1018,6 +1190,7 @@ export default function App() {
           setMois={setMois}
           sectionRef={compareRef}
         />
+        <Parrainage tarifs={tarifs} />
         <SansFormule tarifs={tarifs} />
         <Reglages tarifs={tarifs} version={version} modifie={modifie} reinitialise={reinitialise} status={status} />
         <footer className="foot small">
