@@ -231,6 +231,7 @@ function Mois({ f }) {
 }
 
 function Phare({ tarifs }) {
+  const reduit = useReducedMotion();
   const f = formule(tarifs, tarifs.phare) || tarifs.formules[1];
   const c = calc(tarifs, f);
   const inclus = [];
@@ -243,6 +244,17 @@ function Phare({ tarifs }) {
   return (
     <section className="section" aria-labelledby="t-phare">
       <div className="phare">
+        <svg className="phare-motif" viewBox="0 0 120 150" aria-hidden="true" focusable="false">
+          {[0, 1, 2].map(i => (
+            <motion.path
+              key={i}
+              d={`M60 ${10 + i * 44}L96 ${65 + i * 44}L82 ${65 + i * 44}L60 ${31 + i * 44}L38 ${65 + i * 44}L24 ${65 + i * 44}Z`}
+              initial={{ opacity: 0.35 }}
+              animate={reduit ? undefined : { opacity: [0.35, 1, 0.35] }}
+              transition={{ duration: 2.4, delay: (2 - i) * 0.35, repeat: Infinity, repeatDelay: 1.2 }}
+            />
+          ))}
+        </svg>
         <div className="phare-top">
           <p className="label">La formule phare</p>
           <h2 className="phare-nom" id="t-phare">
@@ -382,6 +394,7 @@ function CarteFormule({ tarifs, f, phare, onCompare }) {
         <Prix className="figure" value={f.prix} />
         <span className="label-lg">/ mois</span>
       </p>
+      <MiniDuel c={c} prix={f.prix} />
       <p className="per">{detail}</p>
       {lignes.length > 0 && (
         <ul className="gains">
@@ -441,15 +454,181 @@ function Formules({ tarifs, onCompare }) {
   );
 }
 
+const RESSORT = { type: 'spring', stiffness: 120, damping: 20 };
+
+// Le duel : deux lames découpées mois par mois, la zone d’économie hachurée et pointée
+function Duel({ c, tarifs }) {
+  const reduit = useReducedMotion();
+  const segments = c.mois;
+  const part = c.carte > 0 ? (c.carteSeances / c.carte) * 100 : 100;
+  const prixPct = c.carte > 0 ? Math.min(100, (c.prix / c.carte) * 100) : 100;
+  const ecoPct = Math.max(0, 100 - prixPct);
+  const cle = `${c.f.id}-${c.mois}`;
+  const unite = c.mois > 1 ? '1 case = 1 mois' : '1 case = 1 séance';
+
+  return (
+    <div className="duel">
+      <div className="duel-row">
+        <div className="bar-top">
+          <span className="bar-name">À la carte</span>
+          <span className="bar-val">
+            <Prix value={c.carte} />
+          </span>
+        </div>
+        <div className="duel-lame">
+        <motion.div
+          key={cle}
+          className="duel-bar carte"
+          initial={reduit ? false : { clipPath: 'inset(0 100% 0 0)' }}
+          animate={{ clipPath: 'inset(0 0% 0 0)' }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {c.mois > 1 ? (
+            Array.from({ length: segments }, (_, i) => (
+              <span key={i} className="seg" style={{ '--part': `${part}%` }} />
+            ))
+          ) : (
+            <>
+              {Array.from({ length: c.f.seances }, (_, i) => (
+                <span key={i} className="seg" style={{ '--part': '100%', flexGrow: tarifs.seance }} />
+              ))}
+              {c.carteDistance > 0 && (
+                <span className="seg" style={{ '--part': '0%', flexGrow: c.carteDistance }} />
+              )}
+            </>
+          )}
+        </motion.div>
+        </div>
+        <p className="duel-legende small muted">
+          <span>
+            <i className="sw sw-seances" />
+            {seances(c.total)} × {euros(tarifs.seance)}
+          </span>
+          {c.carteDistance > 0 && (
+            <span>
+              <i className="sw sw-distance" />
+              suivi à distance × {c.mois}
+            </span>
+          )}
+        </p>
+      </div>
+
+      <div className="duel-row">
+        <div className="bar-top">
+          <span className="bar-name">
+            Avec la formule
+            {c.eco > 0.5 && <span className="tag label is-best">Le moins cher</span>}
+          </span>
+          <span className="bar-val">
+            <Prix value={c.prix} />
+          </span>
+        </div>
+        <div className="duel-track">
+          <motion.div
+            className="duel-bar formule"
+            initial={false}
+            animate={{ width: `${prixPct}%` }}
+            transition={RESSORT}
+          >
+            {Array.from({ length: c.mois > 1 ? c.mois : 1 }, (_, i) => (
+              <span key={i} className="seg" />
+            ))}
+          </motion.div>
+          {ecoPct > 0.3 && (
+            <motion.div
+              className="duel-eco"
+              initial={false}
+              animate={{ width: `${ecoPct}%` }}
+              transition={RESSORT}
+            />
+          )}
+        </div>
+        {ecoPct > 0.3 ? (
+          <div className="duel-pointe">
+            <motion.span
+              className="pointe"
+              initial={false}
+              animate={{ left: `clamp(48px, ${prixPct + ecoPct / 2}%, calc(100% - 48px))` }}
+              transition={RESSORT}
+            >
+              <Icone nom="triangle" />
+              <span className="label">−{euros(c.eco)}</span>
+            </motion.span>
+          </div>
+        ) : null}
+        <p className="duel-legende small muted">
+          <span>
+            <i className="sw sw-formule" />
+            {euros(c.f.prix)} × {c.mois} mois
+            {c.parSeance != null ? `, soit ${euros(c.parSeance)} la séance` : ''}
+          </span>
+          {ecoPct > 0.3 && (
+            <span>
+              <i className="sw sw-eco" />
+              ton économie
+            </span>
+          )}
+          <span className="duel-unite">{unite}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Les séances offertes, en jetons qui tombent un par un
+function Jetons({ n }) {
+  const reduit = useReducedMotion();
+  const MAX = 24;
+  const vus = Math.min(n, MAX);
+  return (
+    <div className="jetons" aria-hidden="true">
+      {Array.from({ length: vus }, (_, i) => (
+        <motion.span
+          key={`${n}-${i}`}
+          className="jeton"
+          initial={reduit ? false : { scale: 0, rotate: -35, y: -10 }}
+          animate={{ scale: 1, rotate: 0, y: 0 }}
+          transition={{ delay: 0.25 + i * 0.045, type: 'spring', stiffness: 520, damping: 17 }}
+        >
+          <Icone nom="check" />
+        </motion.span>
+      ))}
+      {n > MAX && <span className="jeton-plus label">+{n - MAX}</span>}
+    </div>
+  );
+}
+
+// Sur chaque carte : le prix de la formule face au prix à la carte
+function MiniDuel({ c, prix }) {
+  const reduit = useReducedMotion();
+  if (!(c.eco > 0.5) || !(c.carte > 0)) return null;
+  const pct = (prix / c.carte) * 100;
+  return (
+    <div className="mini" aria-hidden="true">
+      <div className="mini-track">
+        <motion.span
+          className="mini-fill"
+          initial={reduit ? false : { width: '100%' }}
+          whileInView={{ width: `${pct}%` }}
+          viewport={{ once: true, amount: 0.8 }}
+          transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        />
+      </div>
+      <div className="mini-legende small">
+        <span className="muted">À la carte {euros(c.carte)}</span>
+        <span className="accent">−{euros(c.eco)} / mois</span>
+      </div>
+    </div>
+  );
+}
+
 function Comparateur({ tarifs, choix, setChoix, mois, setMois, sectionRef }) {
   const f = formule(tarifs, choix) || formule(tarifs, 'hybride-1');
   const type = TYPES.find(t => t.id === f.type);
   const memeType = tarifs.formules.filter(g => g.type === f.type);
   const c = compare(tarifs, f, mois);
   const periode = mois === 1 ? 'par mois' : `sur ${mois} mois`;
-  const max = Math.max(c.carte, c.prix);
   const offertes = Math.floor(c.eco / tarifs.seance + 1e-9);
-  const ressort = { type: 'spring', stiffness: 140, damping: 22 };
 
   const changeType = id => {
     if (id === f.type) return;
@@ -506,57 +685,7 @@ function Comparateur({ tarifs, choix, setChoix, mois, setMois, sectionRef }) {
         .
       </p>
 
-      <div className="bars">
-        <div className="bar is-carte">
-          <div className="bar-top">
-            <span className="bar-name">À la carte</span>
-            <span className="bar-val">
-              <Prix value={c.carte} />
-            </span>
-          </div>
-          <div className="track">
-            <motion.div
-              className="fill fill-seances"
-              initial={false}
-              animate={{ width: `${max > 0 ? (c.carteSeances / max) * 100 : 0}%` }}
-              transition={ressort}
-            />
-            <motion.div
-              className="fill fill-distance"
-              initial={false}
-              animate={{ width: `${max > 0 ? (c.carteDistance / max) * 100 : 0}%` }}
-              transition={ressort}
-            />
-          </div>
-          <p className="small muted">
-            {seances(c.total)} × {euros(tarifs.seance)}
-            {c.carteDistance > 0 ? ` + suivi à distance ${euros(prixDistanciel(tarifs))} × ${mois} mois` : ''}
-          </p>
-        </div>
-        <div className="bar is-formule">
-          <div className="bar-top">
-            <span className="bar-name">
-              Avec la formule
-              {c.eco > 0.5 && <span className="tag label is-best">Le moins cher</span>}
-            </span>
-            <span className="bar-val">
-              <Prix value={c.prix} />
-            </span>
-          </div>
-          <div className="track">
-            <motion.div
-              className="fill"
-              initial={false}
-              animate={{ width: `${max > 0 ? (c.prix / max) * 100 : 0}%` }}
-              transition={ressort}
-            />
-          </div>
-          <p className="small muted">
-            {euros(f.prix)} × {mois} mois
-            {c.parSeance != null ? `, soit ${euros(c.parSeance)} la séance` : ''}
-          </p>
-        </div>
-      </div>
+      <Duel c={c} tarifs={tarifs} />
 
       <div className="result" aria-live="polite">
         {c.eco > 0.5 ? (
@@ -565,10 +694,16 @@ function Comparateur({ tarifs, choix, setChoix, mois, setMois, sectionRef }) {
             <p className="figure-xl accent">
               <Prix value={c.eco} duree={1.1} />
             </p>
-            <p>
-              par rapport à la carte
-              {offertes >= 1 ? `, l’équivalent de ${seances(offertes)} ${pluriel(offertes, 'offerte')}.` : '.'}
-            </p>
+            {offertes >= 1 ? (
+              <>
+                <p>
+                  soit l’équivalent de <strong>{seances(offertes)} {pluriel(offertes, 'offerte')}</strong>
+                </p>
+                <Jetons n={offertes} />
+              </>
+            ) : (
+              <p>par rapport à la carte.</p>
+            )}
           </>
         ) : (
           <>

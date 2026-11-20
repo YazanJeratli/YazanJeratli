@@ -25,6 +25,8 @@
   --space-5: 40px;
   --space-6: 64px;
   --focus-ring: 0 0 0 2px #000000, 0 0 0 4px #e9b43a;
+  --hatch-gold: repeating-linear-gradient(135deg, rgba(233, 180, 58, 0.75) 0 2px, transparent 2px 7px);
+  --hatch-grey: repeating-linear-gradient(135deg, #8a857c 0 2px, transparent 2px 6px);
   color-scheme: dark;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -278,6 +280,42 @@ button {
   flex-direction: column;
   gap: var(--space-3);
   clip-path: polygon(0 0, calc(100% - 40px) 0, 100% 46px, 100% 100%, 0 100%);
+}
+.phare {
+  position: relative;
+}
+.phare > :not(.phare-motif) {
+  position: relative;
+  z-index: 1;
+}
+.phare::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 250, 225, 0.5) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: reflet 5.5s ease-in-out 1.8s infinite;
+}
+@keyframes reflet {
+  0% {
+    transform: translateX(-120%);
+  }
+  32%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+.phare-motif {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 112px;
+  height: 140px;
+  z-index: 0;
+  fill: var(--gold-700);
+  pointer-events: none;
 }
 .phare-top {
   display: flex;
@@ -535,12 +573,12 @@ button {
   color: var(--ink);
   font-weight: 700;
 }
-.bars {
+.duel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
-.bar {
+.duel-row {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -565,22 +603,165 @@ button {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.track {
-  height: 16px;
-  background: var(--surface);
-  overflow: hidden;
-  display: flex;
+/* Lames : bout coupé à 49°, comme les coupes du Y et du Z */
+.duel-lame,
+.duel-track {
+  height: 32px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 28px) 100%, 0 100%);
 }
-.fill {
+.duel-bar {
+  display: flex;
+  gap: 3px;
   height: 100%;
+}
+.duel-bar .seg {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.duel-bar.carte .seg {
+  background: linear-gradient(to right, var(--line-strong) var(--part), transparent var(--part)), var(--hatch-grey);
+}
+.duel-track {
+  display: flex;
+  background: var(--surface);
+}
+.duel-bar.formule {
+  position: relative;
+  overflow: hidden;
   flex: none;
+}
+.duel-bar.formule .seg {
+  background: var(--gold-500);
+}
+.duel-bar.formule::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 247, 214, 0.7) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: lame 3.2s ease-in-out 1s infinite;
+}
+@keyframes lame {
+  0% {
+    transform: translateX(-100%);
+  }
+  45%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+.duel-eco {
+  flex: none;
+  height: 100%;
+  background: var(--hatch-gold);
+}
+.duel-pointe {
+  position: relative;
+  height: 36px;
+  margin-top: calc(-1 * var(--space-1));
+}
+.pointe {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--accent);
+}
+.pointe .icon {
+  width: 16px;
+  height: 16px;
+}
+.pointe .label {
+  white-space: nowrap;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 18px;
+}
+.duel-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+}
+.duel-legende span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.duel-unite {
+  color: var(--line-strong);
+}
+.sw {
+  width: 14px;
+  height: 10px;
+  flex: none;
+}
+.sw-seances {
   background: var(--line-strong);
 }
-.fill-distance {
-  background: var(--ink-muted);
+.sw-distance {
+  background: var(--hatch-grey);
+  box-shadow: inset 0 0 0 1px #8a857c;
 }
-.bar.is-formule .fill {
+.sw-formule {
   background: var(--gold-500);
+}
+.sw-eco {
+  background: var(--hatch-gold);
+  box-shadow: inset 0 0 0 1px rgba(233, 180, 58, 0.8);
+}
+
+/* Séances offertes */
+.jetons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+.jeton {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  background: var(--gold-500);
+  color: var(--on-gold);
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 8px, 100% 100%, 0 100%);
+}
+.jeton .icon {
+  width: 16px;
+  height: 16px;
+}
+.jeton-plus {
+  align-self: center;
+  padding-left: var(--space-1);
+  color: var(--accent);
+}
+
+/* Mini-duel sur les cartes */
+.mini {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mini-track {
+  height: 10px;
+  background: var(--hatch-gold);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+}
+.mini-fill {
+  display: block;
+  height: 100%;
+  background: var(--gold-500);
+}
+.mini-legende {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.mini-legende .accent {
+  font-weight: 700;
 }
 
 .result {
@@ -737,5 +918,10 @@ legend {
 @media (prefers-reduced-motion: reduce) {
   .link-btn .icon {
     transition: none;
+  }
+  .phare::after,
+  .duel-bar.formule::after {
+    animation: none;
+    display: none;
   }
 }
