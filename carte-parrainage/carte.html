@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Carte de parrainage YAZ Coaching</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Carte de visite 85 × 55 mm, fond perdu de 3 mm (91 × 61 mm), zone sûre à 3 mm du bord coupé.
+   Même style que l’appli des tarifs : graphite, halo doré, pilules et cases arrondies. */
+:root {
+  --bg: #0c0c0e;
+  --surface: #151518;
+  --surface-2: #1b1b1f;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-hi: rgba(255, 255, 255, 0.16);
+  --text: #f2f0ea;
+  --muted: #a3a3ab;
+  --gold: #e9b43a;
+  --gold-hi: #f3c650;
+  --gold-soft: rgba(233, 180, 58, 0.14);
+  --on-gold: #1a1406;
+  --grad-gold: linear-gradient(180deg, #f6cf5f 0%, #e9b43a 55%, #d99d26 100%);
+  --display: 'Archivo Black', 'Arial Black', sans-serif;
+  --sans: 'Inter', system-ui, sans-serif;
+}
+@page { size: 91mm 61mm; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #2a2a2e; }
+body { font-family: var(--sans); color: var(--text); -webkit-font-smoothing: antialiased; }
+.planche { display: flex; flex-direction: column; gap: 10mm; padding: 10mm; align-items: center; }
+@media print { .planche { padding: 0; gap: 0; } html, body { background: none; } }
+
+.face {
+  position: relative;
+  width: 91mm;
+  height: 61mm;
+  overflow: hidden;
+  background: var(--bg);
+  break-after: page;
+  isolation: isolate;
+}
+.face:last-child { break-after: auto; }
+/* contenu, 3 mm à l’intérieur du bord coupé */
+.safe { position: absolute; inset: 6mm; }
+
+.etoiles { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.etoiles svg { position: absolute; fill: var(--gold-hi); filter: drop-shadow(0 0 1.2mm rgba(243, 198, 80, 0.8)); }
+
+/* ---------- RECTO ---------- */
+.recto {
+  background:
+    radial-gradient(60mm 40mm at 92% 4%, rgba(233, 180, 58, 0.32), transparent 70%),
+    radial-gradient(50mm 34mm at 0% 100%, rgba(233, 180, 58, 0.12), transparent 70%),
+    var(--bg);
+}
+.recto .safe { display: flex; flex-direction: column; justify-content: space-between; z-index: 1; }
+.haut { display: flex; justify-content: space-between; align-items: flex-start; }
+.logo { width: 24mm; height: auto; display: block; margin: -2.2mm 0 0 -3mm; }
+.pill {
+  display: inline-flex; align-items: center; gap: 1.2mm;
+  padding: 1.1mm 2.6mm 1.1mm 2mm;
+  border-radius: 99mm;
+  background: var(--grad-gold);
+  color: var(--on-gold);
+  font-weight: 700; font-size: 5.6pt; letter-spacing: 0.12em; text-transform: uppercase;
+  box-shadow: 0 1mm 3mm rgba(233, 180, 58, 0.45);
+}
+.pill svg { width: 2.8mm; height: 2.8mm; }
+.accroche {
+  font-family: var(--display);
+  font-size: 13.5pt; line-height: 1.04; text-transform: uppercase;
+  letter-spacing: 0.005em;
+}
+.accroche span { color: var(--gold); }
+.bas { display: flex; justify-content: space-between; align-items: flex-end; gap: 3mm; }
+.sous { font-size: 6.4pt; line-height: 1.35; color: var(--muted); max-width: 36mm; }
+.sous b { color: var(--text); font-weight: 600; }
+.chiffre { text-align: right; }
+.chiffre small { display: block; font-size: 5.6pt; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4mm; }
+.chiffre strong {
+  display: block;
+  font-weight: 800; font-size: 27pt; line-height: 0.95; letter-spacing: -0.03em;
+  background: linear-gradient(180deg, #fde27a 0%, #e9b43a 60%, #c98c1e 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.chiffre em { display: block; font-style: normal; font-size: 5.8pt; color: var(--muted); margin-top: 0.6mm; }
+
+/* ---------- VERSO ---------- */
+.verso {
+  background:
+    radial-gradient(55mm 36mm at 100% 100%, rgba(233, 180, 58, 0.18), transparent 70%),
+    var(--bg);
+}
+.verso .safe { display: grid; grid-template-columns: 1fr 22.5mm; grid-template-rows: auto 1fr auto; column-gap: 3mm; row-gap: 2mm; z-index: 1; }
+.titre { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; }
+.label { font-weight: 700; font-size: 5.6pt; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.mini-logo { width: 12mm; height: auto; display: block; margin: -1.4mm -1.5mm -1.4mm 0; }
+
+.etapes { position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 0.4mm 0; }
+.etapes::before {
+  content: ''; position: absolute; left: 2.15mm; top: 2.5mm; bottom: 2.5mm; width: 0.35mm;
+  background: linear-gradient(var(--gold), rgba(233, 180, 58, 0.2));
+}
+.etape { position: relative; display: flex; gap: 2mm; align-items: flex-start; }
+.etape .num {
+  flex: none; width: 4.6mm; height: 4.6mm; border-radius: 99mm;
+  display: grid; place-items: center;
+  background: var(--grad-gold); color: var(--on-gold);
+  font-weight: 800; font-size: 6.2pt;
+  box-shadow: 0 0 0 0.7mm var(--bg);
+}
+.etape b { display: block; font-weight: 700; font-size: 6.6pt; line-height: 1.25; }
+.etape span { display: block; font-size: 5.6pt; line-height: 1.3; color: var(--muted); }
+
+.slots { display: flex; flex-direction: column; gap: 1.4mm; }
+.slot {
+  border-radius: 2.2mm; padding: 1.5mm 2mm;
+  background: var(--grad-gold); color: var(--on-gold);
+  box-shadow: 0 1mm 3mm rgba(233, 180, 58, 0.35);
+}
+.slot strong { display: block; font-weight: 800; font-size: 10pt; line-height: 1; letter-spacing: -0.02em; }
+.slot span { display: block; font-weight: 700; font-size: 5pt; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.6mm; }
+.total {
+  border-radius: 2.2mm; padding: 1.3mm 2mm;
+  background: var(--gold-soft); border: 0.25mm solid rgba(233, 180, 58, 0.5);
+  color: var(--gold); text-align: center;
+  font-weight: 800; font-size: 6.6pt;
+}
+
+.pied { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 1.3mm; }
+.parrain { display: flex; align-items: flex-end; gap: 1.5mm; font-size: 6pt; font-weight: 600; }
+.parrain i { flex: 1; height: 3.6mm; border-bottom: 0.25mm solid var(--line-hi); }
+.regles { font-size: 4.9pt; line-height: 1.35; color: #8a8a92; }
+</style>
+</head>
+<body>
+<div class="planche">
+
+  <!-- RECTO -->
+  <section class="face recto" id="recto">
+    <div class="etoiles" aria-hidden="true">
+      <svg style="left:47mm;top:15mm;width:3mm;height:3mm" viewBox="0 0 24 24"><path d="M12 0C12.8 8 16 11.2 24 12C16 12.8 12.8 16 12 24C11.2 16 8 12.8 0 12C8 11.2 11.2 8 12 0Z"/></svg>
+      <svg style="left:79mm;top:22mm;width:2.2mm;height:2.2mm;opacity:.8" viewBox="0 0 24 24"><path d="M12 0C12.8 8 16 11.2 24 12C16 12.8 12.8 16 12 24C11.2 16 8 12.8 0 12C8 11.2 11.2 8 12 0Z"/></svg>
+      <svg style="left:52mm;top:5mm;width:1.5mm;height:1.5mm;opacity:.6" viewBox="0 0 24 24"><path d="M12 0C12.8 8 16 11.2 24 12C16 12.8 12.8 16 12 24C11.2 16 8 12.8 0 12C8 11.2 11.2 8 12 0Z"/></svg>
+      <svg style="left:64mm;top:31mm;width:1.4mm;height:1.4mm;opacity:.55" viewBox="0 0 24 24"><path d="M12 0C12.8 8 16 11.2 24 12C16 12.8 12.8 16 12 24C11.2 16 8 12.8 0 12C8 11.2 11.2 8 12 0Z"/></svg>
+      <svg style="left:86mm;top:17mm;width:1.6mm;height:1.6mm;opacity:.7" viewBox="0 0 24 24"><path d="M12 0C12.8 8 16 11.2 24 12C16 12.8 12.8 16 12 24C11.2 16 8 12.8 0 12C8 11.2 11.2 8 12 0Z"/></svg>
+    </div>
+    <div class="safe">
+      <div class="haut">
+        <img class="logo" src="assets/logo-or-detoure.png" alt="YAZ">
+        <span class="pill">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7A4 4 0 1 0 16 7A4 4 0 1 0 8 7Z M4 21V17.5L7.5 14H16.5L20 17.5V21" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>
+          Parrainage
+        </span>
+      </div>
+      <p class="accroche">Ramène un pote,<br><span>paie moins.</span></p>
+      <div class="bas">
+        <p class="sous"><b>−10 % sur ton abonnement</b> pour chaque pote qui s’abonne, chaque mois tant qu’il reste.</p>
+        <div class="chiffre">
+          <small>Jusqu’à</small>
+          <strong>−20&nbsp;%</strong>
+          <em>sur ton abonnement</em>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VERSO -->
+  <section class="face verso" id="verso">
+    <div class="etoiles" aria-hidden="true">
+      <svg style="left:83mm;top:44mm;width:2.4mm;height:2.4mm;opacity:.7" viewBox="0 0 24 24"><path d="M12 0C12.8 8 16 11.2 24 12C16 12.8 12.8 16 12 24C11.2 16 8 12.8 0 12C8 11.2 11.2 8 12 0Z"/></svg>
+    </div>
+    <div class="safe">
+      <div class="titre">
+        <p class="label">Comment ça marche</p>
+        <img class="mini-logo" src="assets/logo-or-detoure.png" alt="YAZ">
+      </div>
+
+      <div class="etapes">
+        <div class="etape"><span class="num">1</span><div><b>Ton pote fait sa séance d’essai</b><span>Il dit qu’il vient de ta part.</span></div></div>
+        <div class="etape"><span class="num">2</span><div><b>Il prend une formule</b><span>Ta remise démarre après son 1<sup>er</sup> mois payé.</span></div></div>
+        <div class="etape"><span class="num">3</span><div><b>Tu as −10 % sur ton abonnement</b><span>Chaque mois, tant qu’il reste abonné.</span></div></div>
+      </div>
+
+      <div class="slots">
+        <div class="slot"><strong>−10&nbsp;%</strong><span>Pote 1</span></div>
+        <div class="slot"><strong>−10&nbsp;%</strong><span>Pote 2</span></div>
+        <div class="total">= −20&nbsp;% max</div>
+      </div>
+
+      <div class="pied">
+        <p class="parrain">Parrain&nbsp;: <i></i></p>
+        <p class="regles">2 filleuls maximum. Nouveaux clients uniquement. Remise arrêtée si le filleul arrête son abonnement. Non cumulable avec une autre promo. YAZ Coaching · Lyon</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
